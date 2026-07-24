@@ -39,7 +39,7 @@
                             Dashboard
                         </a>
                     @else
-                        <a href="{{ route('login') }}" class="px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-450 transition-colors">
+                        <a href="{{ route('login') }}" class="px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                             Log In
                         </a>
                         @if (Route::has('register'))
@@ -62,18 +62,18 @@
                         <span>✨ Absensi Online Karyawan</span>
                     </div>
                     <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-tight">
-                        Kelola Kehadiran Karyawan Secara <span class="bg-gradient-to-r from-indigo-500 to-purple-650 bg-clip-text text-transparent">Real-Time & Praktis</span>
+                        Kelola Kehadiran Karyawan Secara <span class="bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">Real-Time & Praktis</span>
                     </h1>
                     <p class="text-lg text-gray-600 dark:text-gray-400 max-w-xl mx-auto lg:mx-0">
                         Sistem absensi mandiri karyawan terintegrasi. Memudahkan pencatatan jam masuk, jam pulang, serta pengajuan cuti atau keterangan sakit/izin dalam satu sistem terpadu.
                     </p>
                     <div class="flex flex-wrap justify-center lg:justify-start gap-4">
                         @auth
-                            <a href="{{ url('/dashboard') }}" class="px-8 py-4 bg-gradient-to-r from-indigo-550 to-purple-650 text-white font-bold rounded-2xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
+                            <a href="{{ url('/dashboard') }}" class="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-700 text-white font-bold rounded-2xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
                                 Masuk ke Dashboard Absensi
                             </a>
                         @else
-                            <a href="{{ route('login') }}" class="px-8 py-4 bg-gradient-to-r from-indigo-650 to-purple-700 text-white font-bold rounded-2xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
+                            <a href="{{ route('login') }}" class="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-700 text-white font-bold rounded-2xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
                                 Mulai Absensi Sekarang
                             </a>
                             <a href="#fitur" class="px-6 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 text-gray-800 dark:text-white font-bold rounded-2xl transition-all">
