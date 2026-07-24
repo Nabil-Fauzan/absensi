@@ -24,12 +24,12 @@
         <!-- Header / Navigation -->
         <header class="w-full max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <div class="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl text-white shadow-md shadow-indigo-500/20">
+                <div class="p-2.5 bg-indigo-600 rounded-xl text-white shadow-md shadow-indigo-500/20">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
                 </div>
-                <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">AbsenKita</span>
+                <span class="text-xl font-extrabold tracking-tight text-indigo-600 dark:text-indigo-400">AbsenKita</span>
             </div>
 
             @if (Route::has('login'))
@@ -62,18 +62,18 @@
                         <span>✨ Absensi Online Karyawan</span>
                     </div>
                     <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-tight">
-                        Kelola Kehadiran Karyawan Secara <span class="bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">Real-Time & Praktis</span>
+                        Kelola Kehadiran Karyawan Secara <span class="text-indigo-600 dark:text-indigo-400">Real-Time & Praktis</span>
                     </h1>
                     <p class="text-lg text-gray-600 dark:text-gray-400 max-w-xl mx-auto lg:mx-0">
                         Sistem absensi mandiri karyawan terintegrasi. Memudahkan pencatatan jam masuk, jam pulang, serta pengajuan cuti atau keterangan sakit/izin dalam satu sistem terpadu.
                     </p>
                     <div class="flex flex-wrap justify-center lg:justify-start gap-4">
                         @auth
-                            <a href="{{ url('/dashboard') }}" class="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-700 text-white font-bold rounded-2xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
+                            <a href="{{ url('/dashboard') }}" class="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
                                 Masuk ke Dashboard Absensi
                             </a>
                         @else
-                            <a href="{{ route('login') }}" class="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-700 text-white font-bold rounded-2xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
+                            <a href="{{ route('login') }}" class="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
                                 Mulai Absensi Sekarang
                             </a>
                             <a href="#fitur" class="px-6 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 text-gray-800 dark:text-white font-bold rounded-2xl transition-all">
@@ -86,7 +86,7 @@
                 <!-- Right Visual Panel (Modern Geometric Cards) -->
                 <div class="lg:col-span-5 relative flex items-center justify-center">
                     <!-- Decorative Gradients -->
-                    <div class="absolute -inset-4 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full blur-3xl opacity-10 dark:opacity-20 animate-pulse"></div>
+                    <div class="absolute -inset-4 bg-indigo-600 rounded-full blur-3xl opacity-10 dark:opacity-20 animate-pulse"></div>
                     
                     <div class="relative w-full max-w-md bg-white dark:bg-gray-900 p-8 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 space-y-6">
                         <div class="flex items-center justify-between">
@@ -95,7 +95,7 @@
                         </div>
                         
                         <!-- Check In Card Mockup -->
-                        <div class="p-6 bg-gradient-to-br from-indigo-600 to-purple-800 rounded-2xl text-white shadow-lg space-y-4">
+                        <div class="p-6 bg-indigo-600 rounded-2xl text-white shadow-lg space-y-4">
                             <div>
                                 <h4 class="text-xs font-semibold opacity-75 uppercase tracking-wider">Status Hari Ini</h4>
                                 <p class="text-lg font-bold mt-1">Senin, 24 Juli 2026</p>

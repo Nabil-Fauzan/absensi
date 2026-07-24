@@ -25,21 +25,21 @@
                 
                 <!-- Stat Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="p-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-xl text-white">
+                    <div class="p-6 bg-indigo-600 rounded-2xl shadow-xl text-white">
                         <div class="text-sm font-semibold opacity-75 uppercase tracking-wider">Total Kehadiran Hari Ini</div>
                         <div class="text-4xl font-bold mt-2">
                             {{ $attendances->where('date', \Carbon\Carbon::today()->toDateString())->where('status', 'present')->count() }}
                         </div>
                         <div class="text-xs mt-2 opacity-75">Karyawan masuk kantor</div>
                     </div>
-                    <div class="p-6 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-xl text-white">
+                    <div class="p-6 bg-indigo-600 rounded-2xl shadow-xl text-white">
                         <div class="text-sm font-semibold opacity-75 uppercase tracking-wider">Sakit / Izin Hari Ini</div>
                         <div class="text-4xl font-bold mt-2">
                             {{ $attendances->where('date', \Carbon\Carbon::today()->toDateString())->whereIn('status', ['sick', 'leave'])->count() }}
                         </div>
                         <div class="text-xs mt-2 opacity-75">Karyawan absen dengan keterangan</div>
                     </div>
-                    <div class="p-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl shadow-xl text-white">
+                    <div class="p-6 bg-indigo-600 rounded-2xl shadow-xl text-white">
                         <div class="text-sm font-semibold opacity-75 uppercase tracking-wider">Total Karyawan Terdaftar</div>
                         <div class="text-4xl font-bold mt-2">
                             {{ \App\Models\User::where('role', 'employee')->count() }}
@@ -108,7 +108,7 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
                     <!-- Today's Status -->
-                    <div class="lg:col-span-2 p-8 bg-gradient-to-br from-indigo-600 to-purple-800 rounded-3xl shadow-xl text-white flex flex-col justify-between min-h-[250px]">
+                    <div class="lg:col-span-2 p-8 bg-indigo-600 rounded-3xl shadow-xl text-white flex flex-col justify-between min-h-[250px]">
                         <div>
                             <div class="text-sm font-semibold opacity-75 uppercase tracking-wider">Status Absensi Hari Ini</div>
                             <div class="text-lg font-bold mt-1 opacity-90">{{ \Carbon\Carbon::today()->translatedFormat('l, d F Y') }}</div>
