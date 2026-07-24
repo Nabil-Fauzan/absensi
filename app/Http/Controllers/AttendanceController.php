@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use App\Models\Attendance;
+use App\Models\User;
 use App\Mail\LeaveRequestedMail;
 use Carbon\Carbon;
 
@@ -337,7 +338,7 @@ class AttendanceController extends Controller
      * Calculate distance between two coordinates using the Haversine formula.
      * Returns distance in meters.
      */
-    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    private function calculateDistance(float $lat1, float $lon1, float $lat2, float $lon2): float
     {
         $earthRadius = 6371000; // in meters
         
