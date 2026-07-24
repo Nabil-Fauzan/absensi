@@ -25,21 +25,21 @@
                 
                 <!-- Stat Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="p-6 bg-indigo-600 rounded-2xl shadow-xl text-white">
+                    <div class="p-6 bg-emerald-600 rounded-2xl shadow-xl text-white">
                         <div class="text-sm font-semibold opacity-75 uppercase tracking-wider">Total Kehadiran Hari Ini</div>
                         <div class="text-4xl font-bold mt-2">
                             {{ $attendances->where('date', \Carbon\Carbon::today()->toDateString())->where('status', 'present')->count() }}
                         </div>
                         <div class="text-xs mt-2 opacity-75">Karyawan masuk kantor</div>
                     </div>
-                    <div class="p-6 bg-indigo-600 rounded-2xl shadow-xl text-white">
+                    <div class="p-6 bg-emerald-600 rounded-2xl shadow-xl text-white">
                         <div class="text-sm font-semibold opacity-75 uppercase tracking-wider">Sakit / Izin Hari Ini</div>
                         <div class="text-4xl font-bold mt-2">
                             {{ $attendances->where('date', \Carbon\Carbon::today()->toDateString())->whereIn('status', ['sick', 'leave'])->count() }}
                         </div>
                         <div class="text-xs mt-2 opacity-75">Karyawan absen dengan keterangan</div>
                     </div>
-                    <div class="p-6 bg-indigo-600 rounded-2xl shadow-xl text-white">
+                    <div class="p-6 bg-emerald-600 rounded-2xl shadow-xl text-white">
                         <div class="text-sm font-semibold opacity-75 uppercase tracking-wider">Total Karyawan Terdaftar</div>
                         <div class="text-4xl font-bold mt-2">
                             {{ \App\Models\User::where('role', 'employee')->count() }}
@@ -108,21 +108,21 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
                     <!-- Today's Status -->
-                    <div class="lg:col-span-2 p-8 bg-indigo-600 rounded-3xl shadow-xl text-white flex flex-col justify-between min-h-[250px]">
+                    <div class="lg:col-span-2 p-8 bg-emerald-600 rounded-3xl shadow-xl text-white flex flex-col justify-between min-h-[250px]">
                         <div>
                             <div class="text-sm font-semibold opacity-75 uppercase tracking-wider">Status Absensi Hari Ini</div>
                             <div class="text-lg font-bold mt-1 opacity-90">{{ \Carbon\Carbon::today()->translatedFormat('l, d F Y') }}</div>
                             
                             <div class="mt-6">
                                 @if(!$todayAttendance)
-                                    <div class="text-xl font-medium text-indigo-100">Belum melakukan absensi hari ini. Silakan klik absen masuk atau ajukan izin.</div>
+                                    <div class="text-xl font-medium text-emerald-100">Belum melakukan absensi hari ini. Silakan klik absen masuk atau ajukan izin.</div>
                                 @elseif($todayAttendance->status === 'present')
                                     <div class="space-y-2">
                                         <div class="text-3xl font-extrabold flex items-center gap-2">
                                             <span class="inline-block w-3 h-3 rounded-full bg-green-400 animate-ping"></span>
                                             Sudah Absen Masuk
                                         </div>
-                                        <div class="text-sm text-indigo-100">
+                                        <div class="text-sm text-emerald-100">
                                             Jam Masuk: <span class="font-mono font-bold bg-white/20 px-2 py-0.5 rounded text-white">{{ $todayAttendance->check_in }}</span>
                                             @if($todayAttendance->check_out)
                                                 | Jam Pulang: <span class="font-mono font-bold bg-white/20 px-2 py-0.5 rounded text-white">{{ $todayAttendance->check_out }}</span>
@@ -133,7 +133,7 @@
                                     <div class="text-2xl font-bold flex items-center gap-2">
                                         Status: {{ $todayAttendance->status === 'sick' ? '🩺 Sakit' : '📄 Izin' }}
                                     </div>
-                                    <p class="text-sm text-indigo-100 mt-2 italic">Keterangan: "{{ $todayAttendance->notes }}"</p>
+                                    <p class="text-sm text-emerald-100 mt-2 italic">Keterangan: "{{ $todayAttendance->notes }}"</p>
                                 @endif
                             </div>
                         </div>
@@ -143,7 +143,7 @@
                             @if(!$todayAttendance)
                                 <form action="{{ route('attendance.check-in') }}" method="POST">
                                     @csrf
-                                    <button type="submit" class="px-6 py-3 bg-white text-indigo-800 font-bold rounded-xl shadow-lg hover:bg-indigo-50 hover:scale-[1.02] active:scale-95 transition duration-150">
+                                    <button type="submit" class="px-6 py-3 bg-white text-emerald-800 font-bold rounded-xl shadow-lg hover:bg-emerald-50 hover:scale-[1.02] active:scale-95 transition duration-150">
                                         👉 Absen Masuk (Check-In)
                                     </button>
                                 </form>
@@ -169,16 +169,16 @@
                                 @csrf
                                 <div>
                                     <label for="status" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Pilih Status</label>
-                                    <select name="status" id="status" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500">
+                                    <select name="status" id="status" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500">
                                         <option value="sick">🩺 Sakit</option>
                                         <option value="leave">📄 Izin</option>
                                     </select>
                                 </div>
                                 <div>
                                     <label for="notes" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Alasan / Keterangan</label>
-                                    <textarea name="notes" id="notes" rows="3" required placeholder="Tulis alasan tidak masuk kantor..." class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500 text-sm"></textarea>
+                                    <textarea name="notes" id="notes" rows="3" required placeholder="Tulis alasan tidak masuk kantor..." class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm"></textarea>
                                 </div>
-                                <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition duration-150 active:scale-95 shadow-md">
+                                <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition duration-150 active:scale-95 shadow-md">
                                     Ajukan Keterangan
                                 </button>
                             </form>
@@ -194,7 +194,7 @@
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-3xl border border-gray-100 dark:border-gray-700 mt-6">
                     <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-150">Riwayat Kehadiran Anda</h3>
-                        <span class="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-xs font-semibold text-indigo-600 dark:text-indigo-400 rounded-full">
+                        <span class="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-xs font-semibold text-emerald-600 dark:text-emerald-400 rounded-full">
                             Bulan Ini
                         </span>
                     </div>
