@@ -41,6 +41,32 @@ class AttendanceController extends Controller
             return redirect()->back()->with('error', 'Anda sudah mengajukan izin/sakit hari ini.');
         }
 
+        // Calculate Geofencing
+        $officeLat = env('OFFICE_LATITUDE', -6.873218738309585);
+        $officeLon = env('OFFICE_LONGITUDE', 107.5609385222725);
+        $officeRadius = env('OFFICE_RADIUS_METERS', 100);
+        
+        $workMode = 'wfo';
+        if ($request->latitude && $request->longitude) {
+            $distance = $this->calculateDistance($request->latitude, $request->longitude, $officeLat, $officeLon);
+            if ($distance > $officeRadius) {
+                $workMode = 'wfh';
+            }
+        } else {
+            $workMode = 'wfh';
+        }
+
+        // Calculate Keterlambatan
+        $limitStr = env('OFFICE_CHECK_IN_TIME', '08:00:00');
+        $now = Carbon::now();
+        $limitTime = Carbon::createFromFormat('H:i:s', $limitStr);
+        $checkInTimeToday = Carbon::createFromFormat('H:i:s', $now->toTimeString());
+        
+        $minutesLate = 0;
+        if ($checkInTimeToday->greaterThan($limitTime)) {
+            $minutesLate = $checkInTimeToday->diffInMinutes($limitTime);
+        }
+
         // If a present record already exists for today, we update it instead of creating a new one (due to DB unique constraint)
         $existingPresent = Attendance::where('user_id', $userId)
             ->where('date', $today)
@@ -49,21 +75,25 @@ class AttendanceController extends Controller
 
         if ($existingPresent) {
             $existingPresent->update([
-                'check_in' => Carbon::now()->toTimeString(),
+                'check_in' => $now->toTimeString(),
                 'check_out' => null,
                 'latitude_in' => $request->latitude,
                 'longitude_in' => $request->longitude,
                 'latitude_out' => null,
                 'longitude_out' => null,
+                'work_mode' => $workMode,
+                'minutes_late' => $minutesLate,
             ]);
         } else {
             Attendance::create([
                 'user_id' => $userId,
                 'date' => $today,
-                'check_in' => Carbon::now()->toTimeString(),
+                'check_in' => $now->toTimeString(),
                 'status' => 'present',
                 'latitude_in' => $request->latitude,
                 'longitude_in' => $request->longitude,
+                'work_mode' => $workMode,
+                'minutes_late' => $minutesLate,
             ]);
         }
 
@@ -172,7 +202,32 @@ class AttendanceController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            return view('dashboard', compact('attendances'));
+            // Calculate daily stats for today
+            $totalHadir = Attendance::where('date', $today)
+                ->where('status', 'present')
+                ->count();
+                
+            $totalIzinSakit = Attendance::where('date', $today)
+                ->whereIn('status', ['leave', 'sick'])
+                ->count();
+                
+            $totalTerlambat = Attendance::where('date', $today)
+                ->where('status', 'present')
+                ->where('minutes_late', '>', 0)
+                ->count();
+                
+            $employeeUserIds = User::where('role', 'employee')->pluck('id');
+            $absentTodayUserIds = Attendance::where('date', $today)->pluck('user_id');
+            $totalBelumAbsen = $employeeUserIds->diff($absentTodayUserIds)->count();
+
+            $stats = [
+                'hadir' => $totalHadir,
+                'izin_sakit' => $totalIzinSakit,
+                'terlambat' => $totalTerlambat,
+                'belum_absen' => $totalBelumAbsen,
+            ];
+
+            return view('dashboard', compact('attendances', 'stats'));
         }
 
         // Find if there is an open check-in today (present and no check_out)
@@ -237,7 +292,7 @@ class AttendanceController extends Controller
             "Expires"             => "0"
         ];
 
-        $columns = ['Nama Karyawan', 'Tanggal', 'Status', 'Jam Masuk', 'Jam Pulang', 'Keterangan', 'Lokasi Masuk', 'Lokasi Pulang'];
+        $columns = ['Nama Karyawan', 'Tanggal', 'Status', 'Jam Masuk', 'Jam Pulang', 'Mode Kerja', 'Keterlambatan', 'Keterangan', 'Lokasi Masuk', 'Lokasi Pulang'];
 
         $callback = function() use($attendances, $columns) {
             $file = fopen('php://output', 'w');
@@ -252,6 +307,9 @@ class AttendanceController extends Controller
                     default => $att->status
                 };
 
+                $workModeLabel = $att->work_mode === 'wfh' ? 'WFH (Luar Kantor)' : 'WFO (Di Kantor)';
+                $lateLabel = $att->minutes_late > 0 ? "Terlambat {$att->minutes_late} Menit" : 'Tepat Waktu';
+
                 $locationIn = $att->latitude_in ? "https://www.google.com/maps/search/?api=1&query={$att->latitude_in},{$att->longitude_in}" : 'Tidak Ada GPS';
                 $locationOut = $att->latitude_out ? "https://www.google.com/maps/search/?api=1&query={$att->latitude_out},{$att->longitude_out}" : 'Tidak Ada GPS';
 
@@ -261,6 +319,8 @@ class AttendanceController extends Controller
                     $statusLabel,
                     $att->check_in ?? '-',
                     $att->check_out ?? '-',
+                    $workModeLabel,
+                    $lateLabel,
                     $att->notes ?? '-',
                     $locationIn,
                     $locationOut
@@ -271,5 +331,25 @@ class AttendanceController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Calculate distance between two coordinates using the Haversine formula.
+     * Returns distance in meters.
+     */
+    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    {
+        $earthRadius = 6371000; // in meters
+        
+        $latDelta = deg2rad($lat2 - $lat1);
+        $lonDelta = deg2rad($lon2 - $lon1);
+        
+        $a = sin($latDelta / 2) * sin($latDelta / 2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($lonDelta / 2) * sin($lonDelta / 2);
+             
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        
+        return $earthRadius * $c;
     }
 }

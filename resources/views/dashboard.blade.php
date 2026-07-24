@@ -24,27 +24,42 @@
                 <!-- ================= ADMIN DASHBOARD ================= -->
                 
                 <!-- Stat Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="p-6 bg-emerald-600 rounded-2xl shadow-xl text-white">
-                        <div class="text-sm font-semibold opacity-75 uppercase tracking-wider">Total Kehadiran Hari Ini</div>
-                        <div class="text-4xl font-bold mt-2">
-                            {{ $attendances->where('date', \Carbon\Carbon::today()->toDateString())->where('status', 'present')->count() }}
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-150 dark:border-gray-700 flex flex-col justify-between">
+                        <div>
+                            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Hadir Hari Ini</div>
+                            <div class="text-4xl font-extrabold mt-2 text-emerald-600 dark:text-emerald-400">
+                                {{ $stats['hadir'] }}
+                            </div>
                         </div>
-                        <div class="text-xs mt-2 opacity-75">Karyawan masuk kantor</div>
+                        <div class="text-xs mt-3 text-gray-500 dark:text-gray-400">Karyawan masuk kantor (WFO/WFH)</div>
                     </div>
-                    <div class="p-6 bg-emerald-600 rounded-2xl shadow-xl text-white">
-                        <div class="text-sm font-semibold opacity-75 uppercase tracking-wider">Sakit / Izin Hari Ini</div>
-                        <div class="text-4xl font-bold mt-2">
-                            {{ $attendances->where('date', \Carbon\Carbon::today()->toDateString())->whereIn('status', ['sick', 'leave'])->count() }}
+                    <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-150 dark:border-gray-700 flex flex-col justify-between">
+                        <div>
+                            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Sakit / Izin</div>
+                            <div class="text-4xl font-extrabold mt-2 text-blue-600 dark:text-blue-400">
+                                {{ $stats['izin_sakit'] }}
+                            </div>
                         </div>
-                        <div class="text-xs mt-2 opacity-75">Karyawan absen dengan keterangan</div>
+                        <div class="text-xs mt-3 text-gray-500 dark:text-gray-400">Karyawan absen dengan keterangan</div>
                     </div>
-                    <div class="p-6 bg-emerald-600 rounded-2xl shadow-xl text-white">
-                        <div class="text-sm font-semibold opacity-75 uppercase tracking-wider">Total Karyawan Terdaftar</div>
-                        <div class="text-4xl font-bold mt-2">
-                            {{ \App\Models\User::where('role', 'employee')->count() }}
+                    <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-150 dark:border-gray-700 flex flex-col justify-between">
+                        <div>
+                            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Terlambat</div>
+                            <div class="text-4xl font-extrabold mt-2 text-amber-600 dark:text-amber-400">
+                                {{ $stats['terlambat'] }}
+                            </div>
                         </div>
-                        <div class="text-xs mt-2 opacity-75">Akun karyawan aktif</div>
+                        <div class="text-xs mt-3 text-gray-500 dark:text-gray-400">Absen masuk setelah 08:00 WIB</div>
+                    </div>
+                    <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-150 dark:border-gray-700 flex flex-col justify-between">
+                        <div>
+                            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Belum Absen</div>
+                            <div class="text-4xl font-extrabold mt-2 text-rose-600 dark:text-rose-400">
+                                {{ $stats['belum_absen'] }}
+                            </div>
+                        </div>
+                        <div class="text-xs mt-3 text-gray-500 dark:text-gray-400">Karyawan belum absen hari ini</div>
                     </div>
                 </div>
 
@@ -104,6 +119,15 @@
                                         <td class="p-4 font-semibold text-gray-900 dark:text-white">
                                             {{ $att->user->name }}
                                             <div class="text-xs text-gray-400 font-normal">{{ $att->user->email }}</div>
+                                            @if($att->status === 'present')
+                                                <div class="mt-1">
+                                                    @if($att->work_mode === 'wfo')
+                                                        <span class="px-2 py-0.5 text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-450 rounded border border-emerald-200 dark:border-emerald-900/60">🏢 WFO (Di Kantor)</span>
+                                                    @else
+                                                        <span class="px-2 py-0.5 text-[9px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-450 rounded border border-amber-200 dark:border-amber-900/60">🏠 WFH (Luar Kantor)</span>
+                                                    @endif
+                                                </div>
+                                            @endif
                                         </td>
                                         <td class="p-4">{{ \Carbon\Carbon::parse($att->date)->translatedFormat('d F Y') }}</td>
                                         <td class="p-4">
@@ -115,7 +139,14 @@
                                                 <span class="px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400 rounded-full">Izin</span>
                                             @endif
                                         </td>
-                                        <td class="p-4 font-mono font-bold">{{ $att->check_in ?? '-' }}</td>
+                                        <td class="p-4">
+                                            <div class="font-mono font-bold text-gray-900 dark:text-white">{{ $att->check_in ?? '-' }}</div>
+                                            @if($att->status === 'present' && $att->minutes_late > 0)
+                                                <div class="text-[10px] font-semibold text-rose-600 dark:text-rose-400 mt-0.5">
+                                                    ⏱ Terlambat {{ $att->minutes_late }} m
+                                                </div>
+                                            @endif
+                                        </td>
                                         <td class="p-4 font-mono font-bold">{{ $att->check_out ?? '-' }}</td>
                                         <td class="p-4">
                                             <div class="flex items-center gap-2 text-xs">
@@ -269,6 +300,15 @@
                                     <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition duration-150">
                                         <td class="p-4 font-semibold text-gray-900 dark:text-white">
                                             {{ \Carbon\Carbon::parse($att->date)->translatedFormat('d F Y') }}
+                                            @if($att->status === 'present')
+                                                <div class="mt-1">
+                                                    @if($att->work_mode === 'wfo')
+                                                        <span class="px-2 py-0.5 text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-450 rounded border border-emerald-200 dark:border-emerald-900/60">🏢 WFO</span>
+                                                    @else
+                                                        <span class="px-2 py-0.5 text-[9px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-450 rounded border border-amber-200 dark:border-amber-900/60">🏠 WFH</span>
+                                                    @endif
+                                                </div>
+                                            @endif
                                         </td>
                                         <td class="p-4">
                                             @if($att->status === 'present')
@@ -279,7 +319,14 @@
                                                 <span class="px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400 rounded-full">Izin</span>
                                             @endif
                                         </td>
-                                        <td class="p-4 font-mono font-bold">{{ $att->check_in ?? '-' }}</td>
+                                        <td class="p-4">
+                                            <div class="font-mono font-bold text-gray-900 dark:text-white">{{ $att->check_in ?? '-' }}</div>
+                                            @if($att->status === 'present' && $att->minutes_late > 0)
+                                                <div class="text-[10px] font-semibold text-rose-600 dark:text-rose-400 mt-0.5">
+                                                    ⏱ Terlambat {{ $att->minutes_late }} m
+                                                </div>
+                                            @endif
+                                        </td>
                                         <td class="p-4 font-mono font-bold">{{ $att->check_out ?? '-' }}</td>
                                         <td class="p-4 text-xs text-gray-500 dark:text-gray-400 italic max-w-sm truncate">{{ $att->notes ?? '-' }}</td>
                                     </tr>
