@@ -29,36 +29,52 @@
                 
                 <!-- Stat Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-150 dark:border-gray-700 flex flex-col justify-between">
+                    <!-- Hadir Card -->
+                    <div onclick="filterByStatus('present')" class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-150 dark:border-gray-700 flex flex-col justify-between cursor-pointer hover:shadow-lg hover:scale-[1.02] transform transition-all duration-150 active:scale-95 group">
                         <div>
-                            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Hadir Hari Ini</div>
+                            <div class="flex items-center justify-between">
+                                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider group-hover:text-emerald-500 transition duration-150">Hadir Hari Ini</div>
+                                <span class="text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition duration-150">⚡ Klik filter</span>
+                            </div>
                             <div class="text-4xl font-extrabold mt-2 text-emerald-600 dark:text-emerald-400">
                                 {{ $stats['hadir'] }}
                             </div>
                         </div>
                         <div class="text-xs mt-3 text-gray-500 dark:text-gray-400">Karyawan masuk kantor (WFO/WFH)</div>
                     </div>
-                    <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-150 dark:border-gray-700 flex flex-col justify-between">
+                    <!-- Sakit/Izin Card -->
+                    <div onclick="filterByStatus('izin_sakit')" class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-150 dark:border-gray-700 flex flex-col justify-between cursor-pointer hover:shadow-lg hover:scale-[1.02] transform transition-all duration-150 active:scale-95 group">
                         <div>
-                            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Sakit / Izin</div>
+                            <div class="flex items-center justify-between">
+                                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider group-hover:text-blue-500 transition duration-150">Sakit / Izin</div>
+                                <span class="text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition duration-150">⚡ Klik filter</span>
+                            </div>
                             <div class="text-4xl font-extrabold mt-2 text-blue-600 dark:text-blue-400">
                                 {{ $stats['izin_sakit'] }}
                             </div>
                         </div>
                         <div class="text-xs mt-3 text-gray-500 dark:text-gray-400">Karyawan absen dengan keterangan</div>
                     </div>
-                    <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-150 dark:border-gray-700 flex flex-col justify-between">
+                    <!-- Terlambat Card -->
+                    <div onclick="filterByStatus('terlambat')" class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-150 dark:border-gray-700 flex flex-col justify-between cursor-pointer hover:shadow-lg hover:scale-[1.02] transform transition-all duration-150 active:scale-95 group">
                         <div>
-                            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Terlambat</div>
+                            <div class="flex items-center justify-between">
+                                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider group-hover:text-amber-500 transition duration-150">Terlambat</div>
+                                <span class="text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition duration-150">⚡ Klik filter</span>
+                            </div>
                             <div class="text-4xl font-extrabold mt-2 text-amber-600 dark:text-amber-400">
                                 {{ $stats['terlambat'] }}
                             </div>
                         </div>
                         <div class="text-xs mt-3 text-gray-500 dark:text-gray-400">Absen masuk setelah 08:00 WIB</div>
                     </div>
-                    <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-150 dark:border-gray-700 flex flex-col justify-between">
+                    <!-- Belum Absen Card -->
+                    <div onclick="openBelumAbsenModal()" class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-150 dark:border-gray-700 flex flex-col justify-between cursor-pointer hover:shadow-lg hover:scale-[1.02] transform transition-all duration-150 active:scale-95 group">
                         <div>
-                            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Belum Absen</div>
+                            <div class="flex items-center justify-between">
+                                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider group-hover:text-rose-500 transition duration-150">Belum Absen</div>
+                                <span class="text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition duration-150">📋 Lihat daftar</span>
+                            </div>
                             <div class="text-4xl font-extrabold mt-2 text-rose-600 dark:text-rose-400">
                                 {{ $stats['belum_absen'] }}
                             </div>
@@ -96,7 +112,29 @@
 
                 <!-- Filter Form & Export -->
                 <div class="mb-6 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700">
-                    <form method="GET" action="{{ route('dashboard') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div class="flex flex-wrap items-center justify-between mb-4 gap-2">
+                        <h4 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <span>Pencarian & Filter Data</span>
+                            @if(request('status'))
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-250 dark:border-emerald-900/60">
+                                    Filter Status: 
+                                    @if(request('status') === 'present') Hadir @endif
+                                    @if(request('status') === 'izin_sakit') Sakit/Izin @endif
+                                    @if(request('status') === 'terlambat') Terlambat @endif
+                                    <button type="button" onclick="clearStatusFilter()" class="hover:text-emerald-900 dark:hover:text-white font-bold ml-1">✕</button>
+                                </span>
+                            @endif
+                        </h4>
+                        <!-- Quick Date Buttons -->
+                        <div class="flex items-center gap-1.5 text-[11px] font-semibold text-gray-550 dark:text-gray-450">
+                            <span>Pintasan Tanggal:</span>
+                            <button type="button" onclick="setDateRange('today')" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 rounded-md border border-gray-200 dark:border-gray-800 transition duration-150 active:scale-95">Hari Ini</button>
+                            <button type="button" onclick="setDateRange('week')" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 rounded-md border border-gray-200 dark:border-gray-800 transition duration-150 active:scale-95">Minggu Ini</button>
+                            <button type="button" onclick="setDateRange('month')" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 rounded-md border border-gray-200 dark:border-gray-800 transition duration-150 active:scale-95">Bulan Ini</button>
+                        </div>
+                    </div>
+                    <form method="GET" action="{{ route('dashboard') }}" id="filterForm" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <input type="hidden" name="status" id="filterStatus" value="{{ request('status') }}">
                         <div>
                             <label for="search" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Cari Karyawan</label>
                             <input type="text" name="search" id="search" value="{{ request('search') }}" placeholder="Ketik nama..." class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
@@ -180,26 +218,30 @@
                                         </td>
                                         <td class="p-4 font-mono font-bold text-gray-900 dark:text-white">{{ $att->check_out ?? '-' }}</td>
                                         <td class="p-4">
-                                            <div class="flex items-center gap-1 text-xs">
-                                                @if($att->latitude_in)
-                                                    <button type="button" onclick="openMapModal({{ $att->latitude_in }}, {{ $att->longitude_in }}, '{{ addslashes($att->user->name) }}', 'Absen Masuk (Check-In) - {{ $att->check_in }}', '{{ $att->work_mode === 'wfh' ? '🏠 WFH (Luar Kantor)' : '🏢 WFO (Di Kantor)' }}')" class="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-450 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-md font-semibold flex items-center gap-0.5 border border-emerald-150 dark:border-emerald-900/60 transition duration-150 active:scale-95">
-                                                        📍 Masuk
-                                                    </button>
-                                                @else
-                                                    <span class="text-gray-400">-</span>
-                                                @endif
-                                                
-                                                <span class="text-gray-300 dark:text-gray-600">/</span>
-                                                
-                                                @if($att->latitude_out)
-                                                    <button type="button" onclick="openMapModal({{ $att->latitude_out }}, {{ $att->longitude_out }}, '{{ addslashes($att->user->name) }}', 'Absen Keluar (Check-Out) - {{ $att->check_out }}', '{{ $att->work_mode === 'wfh' ? '🏠 WFH (Luar Kantor)' : '🏢 WFO (Di Kantor)' }}')" class="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-450 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-md font-semibold flex items-center gap-0.5 border border-emerald-150 dark:border-emerald-900/60 transition duration-150 active:scale-95">
-                                                        📍 Keluar
-                                                    </button>
-                                                @else
-                                                    <span class="text-gray-400">-</span>
-                                                @endif
-                                            </div>
-                                        </td>
+                                             <div class="flex items-center gap-1 text-xs">
+                                                 @if($att->latitude_in)
+                                                     <button type="button" onclick="openMapModal({{ $att->latitude_in }}, {{ $att->longitude_in }}, '{{ addslashes($att->user->name) }}', 'Absen Masuk (Check-In) - {{ $att->check_in }}', '{{ $att->work_mode === 'wfh' ? '🏠 WFH (Luar Kantor)' : '🏢 WFO (Di Kantor)' }}')" class="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-455 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-md font-semibold flex items-center gap-0.5 border border-emerald-150 dark:border-emerald-900/60 transition duration-150 active:scale-95">
+                                                         📍 Masuk
+                                                     </button>
+                                                 @elseif($att->status === 'present')
+                                                     <span class="px-2 py-1 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-150 dark:border-rose-900/60 rounded-md font-bold text-[10px]">⚠️ Tanpa GPS</span>
+                                                 @else
+                                                     <span class="text-gray-400">-</span>
+                                                 @endif
+                                                 
+                                                 <span class="text-gray-300 dark:text-gray-600">/</span>
+                                                 
+                                                 @if($att->latitude_out)
+                                                     <button type="button" onclick="openMapModal({{ $att->latitude_out }}, {{ $att->longitude_out }}, '{{ addslashes($att->user->name) }}', 'Absen Keluar (Check-Out) - {{ $att->check_out }}', '{{ $att->work_mode === 'wfh' ? '🏠 WFH (Luar Kantor)' : '🏢 WFO (Di Kantor)' }}')" class="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-455 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-md font-semibold flex items-center gap-0.5 border border-emerald-150 dark:border-emerald-900/60 transition duration-150 active:scale-95">
+                                                         📍 Keluar
+                                                     </button>
+                                                 @elseif($att->check_out)
+                                                     <span class="px-2 py-1 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-150 dark:border-rose-900/60 rounded-md font-bold text-[10px]">⚠️ Tanpa GPS</span>
+                                                 @else
+                                                     <span class="text-gray-400">-</span>
+                                                 @endif
+                                             </div>
+                                         </td>
                                         <td class="p-4 text-xs text-gray-500 dark:text-gray-400 italic max-w-xs truncate">{{ $att->notes ?? '-' }}</td>
                                     </tr>
                                 @empty
@@ -404,7 +446,75 @@
                 
                 <!-- Modal Footer -->
                 <div class="flex justify-end border-t border-gray-100 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-900/50 rounded-b-3xl">
+                    <button type="button" id="copyCoordsBtn" onclick="copyMapCoordinates()" class="px-5 py-2.5 bg-emerald-55 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-400 font-bold rounded-xl text-sm transition duration-150 active:scale-95 mr-2">
+                        📋 Salin Koordinat
+                    </button>
                     <button type="button" onclick="closeMapModal()" class="px-5 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold rounded-xl text-sm transition duration-150 active:scale-95">
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Belum Absen Modal -->
+    <div id="belumAbsenModal" class="fixed inset-0 z-50 hidden overflow-y-auto" role="dialog" aria-modal="true">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm transition-opacity" onclick="closeBelumAbsenModal()"></div>
+        
+        <!-- Modal wrapper -->
+        <div class="flex min-h-screen items-center justify-center p-4">
+            <div class="relative w-full max-w-lg transform overflow-hidden rounded-3xl bg-white dark:bg-gray-800 shadow-2xl transition-all border border-gray-100 dark:border-gray-700">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-6 py-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                            <span>📋 Karyawan Belum Absen</span>
+                            <span class="px-2 py-0.5 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-450 rounded-full text-xs border border-rose-200">
+                                Hari Ini
+                            </span>
+                        </h3>
+                        <p class="text-xs text-gray-400 mt-0.5">Daftar staf terdaftar yang belum mencatatkan absensi atau izin hari ini</p>
+                    </div>
+                    <button type="button" onclick="closeBelumAbsenModal()" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none text-xl p-2">
+                        ✕
+                    </button>
+                </div>
+                
+                <!-- Modal Body -->
+                <div class="p-6 max-h-96 overflow-y-auto">
+                    @forelse($belumAbsenUsers as $u)
+                        <div class="flex items-center justify-between py-2.5 border-b border-gray-50 dark:border-gray-700 last:border-b-0">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-full bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 flex items-center justify-center font-bold text-xs">
+                                    {{ strtoupper(substr($u->name, 0, 1)) }}
+                                </div>
+                                <div>
+                                    <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ $u->name }}</div>
+                                    <div class="text-xs text-gray-450 dark:text-gray-400">{{ $u->email }}</div>
+                                </div>
+                            </div>
+                            <span class="px-2 py-0.5 bg-gray-50 dark:bg-gray-900 text-gray-400 rounded-md text-[10px] font-bold">
+                                Belum Absen
+                            </span>
+                        </div>
+                    @empty
+                        <div class="py-8 text-center text-gray-450 dark:text-gray-500">
+                            🎉 Luar biasa! Semua karyawan sudah melakukan absensi hari ini.
+                        </div>
+                    @endforelse
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="flex justify-between border-t border-gray-100 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-900/50 rounded-b-3xl">
+                    @if($belumAbsenUsers->count() > 0)
+                        <button type="button" id="copyBelumAbsenBtn" onclick="copyBelumAbsenList()" class="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-400 font-bold rounded-xl text-xs transition duration-150 active:scale-95">
+                            📋 Salin Daftar Nama
+                        </button>
+                    @else
+                        <div></div>
+                    @endif
+                    <button type="button" onclick="closeBelumAbsenModal()" class="px-5 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold rounded-xl text-sm transition duration-150 active:scale-95">
                         Tutup
                     </button>
                 </div>
@@ -416,8 +526,11 @@
         // Leaflet Map modal instance variables
         let myMap = null;
         let myMarker = null;
+        let currentModalCoords = null;
 
         function openMapModal(latitude, longitude, employeeName, timeLabel, modeText) {
+            currentModalCoords = `${latitude},${longitude}`;
+            
             // Show modal
             const modal = document.getElementById('mapModal');
             modal.classList.remove('hidden');
@@ -455,7 +568,7 @@
                     <div class="text-sm">
                         <strong class="text-emerald-700">${employeeName}</strong><br>
                         <span class="text-xs text-gray-500">${timeLabel}</span><br>
-                        <span class="inline-block mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-emerald-50 text-emerald-850 rounded border border-emerald-200">${modeText}</span>
+                        <span class="inline-block mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-emerald-50 text-emerald-850 rounded border border-emerald-250">${modeText}</span>
                     </div>
                 `).openPopup();
                 
@@ -467,6 +580,86 @@
         function closeMapModal() {
             const modal = document.getElementById('mapModal');
             modal.classList.add('hidden');
+        }
+
+        function copyMapCoordinates() {
+            if (currentModalCoords) {
+                navigator.clipboard.writeText(currentModalCoords).then(() => {
+                    const btn = document.getElementById('copyCoordsBtn');
+                    const origText = btn.innerHTML;
+                    btn.innerHTML = '✅ Tersalin!';
+                    setTimeout(() => {
+                        btn.innerHTML = origText;
+                    }, 1500);
+                }).catch(err => {
+                    alert('Gagal menyalin koordinat: ' + err);
+                });
+            }
+        }
+
+        function filterByStatus(statusVal) {
+            document.getElementById('filterStatus').value = statusVal;
+            document.getElementById('filterForm').submit();
+        }
+
+        function clearStatusFilter() {
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterForm').submit();
+        }
+
+        function openBelumAbsenModal() {
+            document.getElementById('belumAbsenModal').classList.remove('hidden');
+        }
+
+        function closeBelumAbsenModal() {
+            document.getElementById('belumAbsenModal').classList.add('hidden');
+        }
+
+        function copyBelumAbsenList() {
+            const list = @json($belumAbsenUsers->pluck('name'));
+            if (list.length > 0) {
+                const text = list.join('\n');
+                navigator.clipboard.writeText(text).then(() => {
+                    const btn = document.getElementById('copyBelumAbsenBtn');
+                    const origText = btn.innerHTML;
+                    btn.innerHTML = '✅ Tersalin!';
+                    setTimeout(() => {
+                        btn.innerHTML = origText;
+                    }, 1500);
+                });
+            }
+        }
+
+        function setDateRange(rangeType) {
+            const startDateInput = document.getElementById('start_date');
+            const endDateInput = document.getElementById('end_date');
+            const today = new Date();
+            
+            const formatDate = (date) => {
+                const yyyy = date.getFullYear();
+                const mm = String(date.getMonth() + 1).padStart(2, '0');
+                const dd = String(date.getDate()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            };
+
+            if (rangeType === 'today') {
+                const dateStr = formatDate(today);
+                startDateInput.value = dateStr;
+                endDateInput.value = dateStr;
+            } else if (rangeType === 'week') {
+                const currentDay = today.getDay();
+                const diff = today.getDate() - currentDay + (currentDay === 0 ? -6 : 1);
+                const monday = new Date(today.setDate(diff));
+                startDateInput.value = formatDate(monday);
+                endDateInput.value = formatDate(new Date());
+            } else if (rangeType === 'month') {
+                const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                startDateInput.value = formatDate(firstDay);
+                endDateInput.value = formatDate(new Date());
+            }
+            
+            // Auto submit the form to apply date filters immediately!
+            document.getElementById('filterForm').submit();
         }
 
         function requestLocationAndSubmit(formId) {

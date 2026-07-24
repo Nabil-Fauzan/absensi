@@ -199,6 +199,16 @@ class AttendanceController extends Controller
                 $query->where('date', '<=', $request->end_date);
             }
 
+            if ($request->status) {
+                if ($request->status === 'present') {
+                    $query->where('status', 'present');
+                } elseif ($request->status === 'izin_sakit') {
+                    $query->whereIn('status', ['sick', 'leave']);
+                } elseif ($request->status === 'terlambat') {
+                    $query->where('status', 'present')->where('minutes_late', '>', 0);
+                }
+            }
+
             $attendances = $query->orderBy('date', 'desc')
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -221,6 +231,11 @@ class AttendanceController extends Controller
             $absentTodayUserIds = Attendance::where('date', $today)->pluck('user_id');
             $totalBelumAbsen = $employeeUserIds->diff($absentTodayUserIds)->count();
 
+            // Compile names of employees who haven't checked in
+            $belumAbsenUsers = User::whereIn('id', $employeeUserIds->diff($absentTodayUserIds))
+                ->orderBy('name', 'asc')
+                ->get(['name', 'email']);
+
             $stats = [
                 'hadir' => $totalHadir,
                 'izin_sakit' => $totalIzinSakit,
@@ -240,7 +255,7 @@ class AttendanceController extends Controller
                 'check_in_limit' => $checkInTimeLimit,
             ];
 
-            return view('dashboard', compact('attendances', 'stats', 'officeConfig'));
+            return view('dashboard', compact('attendances', 'stats', 'officeConfig', 'belumAbsenUsers'));
         }
 
         // Find if there is an open check-in today (present and no check_out)
