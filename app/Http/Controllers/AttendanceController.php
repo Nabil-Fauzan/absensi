@@ -119,7 +119,7 @@ class AttendanceController extends Controller
         $user = Auth::user();
         $today = Carbon::today()->toDateString();
 
-        if ($user->isAdmin()) {
+        if ($user instanceof \App\Models\User && $user->isAdmin()) {
             // Admin sees all records with search & date filters
             $query = Attendance::with('user');
 
@@ -162,7 +162,7 @@ class AttendanceController extends Controller
     public function export(Request $request)
     {
         $user = Auth::user();
-        if (!$user->isAdmin()) {
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
             abort(403);
         }
 
