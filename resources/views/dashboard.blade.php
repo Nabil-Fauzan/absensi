@@ -48,6 +48,35 @@
                     </div>
                 </div>
 
+                <!-- Filter Form & Export -->
+                <div class="mb-6 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700">
+                    <form method="GET" action="{{ route('dashboard') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <div>
+                            <label for="search" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Cari Karyawan</label>
+                            <input type="text" name="search" id="search" value="{{ request('search') }}" placeholder="Ketik nama..." class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                        </div>
+                        <div>
+                            <label for="start_date" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Tanggal Mulai</label>
+                            <input type="date" name="start_date" id="start_date" value="{{ request('start_date') }}" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                        </div>
+                        <div>
+                            <label for="end_date" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Tanggal Selesai</label>
+                            <input type="date" name="end_date" id="end_date" value="{{ request('end_date') }}" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="submit" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition duration-150 active:scale-95 shadow-md">
+                                🔍 Filter
+                            </button>
+                            <a href="{{ route('dashboard') }}" class="py-2.5 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-750 dark:text-gray-200 font-bold rounded-xl text-sm transition duration-150 active:scale-95 text-center flex items-center justify-center">
+                                Reset
+                            </a>
+                            <a href="{{ route('attendance.export', request()->all()) }}" class="py-2.5 px-4 bg-emerald-100 dark:bg-emerald-950/40 hover:bg-emerald-250 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-450 font-bold rounded-xl text-sm transition duration-150 active:scale-95 text-center flex items-center justify-center gap-1">
+                                📥 Ekspor
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
                 <!-- Admin Attendance Log Table -->
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-2xl border border-gray-100 dark:border-gray-700">
                     <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
@@ -65,6 +94,7 @@
                                     <th class="p-4">Status</th>
                                     <th class="p-4">Jam Masuk</th>
                                     <th class="p-4">Jam Keluar</th>
+                                    <th class="p-4">Lokasi</th>
                                     <th class="p-4">Keterangan</th>
                                 </tr>
                             </thead>
@@ -87,11 +117,32 @@
                                         </td>
                                         <td class="p-4 font-mono font-bold">{{ $att->check_in ?? '-' }}</td>
                                         <td class="p-4 font-mono font-bold">{{ $att->check_out ?? '-' }}</td>
+                                        <td class="p-4">
+                                            <div class="flex items-center gap-2 text-xs">
+                                                @if($att->latitude_in)
+                                                    <a href="https://www.google.com/maps/search/?api=1&query={{ $att->latitude_in }},{{ $att->longitude_in }}" target="_blank" class="px-2 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-450 rounded-md hover:underline font-semibold flex items-center gap-0.5">
+                                                        📍 Masuk
+                                                    </a>
+                                                @else
+                                                    <span class="text-gray-400">-</span>
+                                                @endif
+                                                
+                                                <span class="text-gray-300 dark:text-gray-600">/</span>
+                                                
+                                                @if($att->latitude_out)
+                                                    <a href="https://www.google.com/maps/search/?api=1&query={{ $att->latitude_out }},{{ $att->longitude_out }}" target="_blank" class="px-2 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-450 rounded-md hover:underline font-semibold flex items-center gap-0.5">
+                                                        📍 Keluar
+                                                    </a>
+                                                @else
+                                                    <span class="text-gray-400">-</span>
+                                                @endif
+                                            </div>
+                                        </td>
                                         <td class="p-4 text-xs text-gray-500 dark:text-gray-400 italic max-w-xs truncate">{{ $att->notes ?? '-' }}</td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="p-8 text-center text-gray-400 dark:text-gray-500">
+                                        <td colspan="7" class="p-8 text-center text-gray-400 dark:text-gray-500">
                                             Belum ada data absensi tercatat.
                                         </td>
                                     </tr>
@@ -141,16 +192,20 @@
                         <!-- Action Buttons -->
                         <div class="mt-6 flex flex-wrap gap-4">
                             @if(!$todayAttendance)
-                                <form action="{{ route('attendance.check-in') }}" method="POST">
+                                <form action="{{ route('attendance.check-in') }}" method="POST" id="check-in-form">
                                     @csrf
-                                    <button type="submit" class="px-6 py-3 bg-white text-emerald-800 font-bold rounded-xl shadow-lg hover:bg-emerald-50 hover:scale-[1.02] active:scale-95 transition duration-150">
+                                    <input type="hidden" name="latitude" value="">
+                                    <input type="hidden" name="longitude" value="">
+                                    <button type="button" onclick="requestLocationAndSubmit('check-in-form')" class="px-6 py-3 bg-white text-emerald-800 font-bold rounded-xl shadow-lg hover:bg-emerald-50 hover:scale-[1.02] active:scale-95 transition duration-150">
                                         👉 Absen Masuk (Check-In)
                                     </button>
                                 </form>
                             @elseif($todayAttendance->status === 'present' && !$todayAttendance->check_out)
-                                <form action="{{ route('attendance.check-out') }}" method="POST">
+                                <form action="{{ route('attendance.check-out') }}" method="POST" id="check-out-form">
                                     @csrf
-                                    <button type="submit" class="px-6 py-3 bg-rose-500 text-white font-bold rounded-xl shadow-lg hover:bg-rose-600 hover:scale-[1.02] active:scale-95 transition duration-150">
+                                    <input type="hidden" name="latitude" value="">
+                                    <input type="hidden" name="longitude" value="">
+                                    <button type="button" onclick="requestLocationAndSubmit('check-out-form')" class="px-6 py-3 bg-rose-500 text-white font-bold rounded-xl shadow-lg hover:bg-rose-600 hover:scale-[1.02] active:scale-95 transition duration-150">
                                         👈 Absen Keluar (Check-Out)
                                     </button>
                                 </form>
@@ -244,4 +299,40 @@
 
         </div>
     </div>
+
+    <script>
+        function requestLocationAndSubmit(formId) {
+            const form = document.getElementById(formId);
+            const button = form.querySelector('button');
+            
+            // Set loading state
+            button.disabled = true;
+            button.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-current inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Menghubungkan GPS...
+            `;
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        form.querySelector('input[name="latitude"]').value = position.coords.latitude;
+                        form.querySelector('input[name="longitude"]').value = position.coords.longitude;
+                        form.submit();
+                    },
+                    (error) => {
+                        console.warn("Geolocation warning: " + error.message);
+                        alert("Gagal mendapatkan lokasi GPS: " + error.message + ". Absensi tetap dicatat tanpa lokasi.");
+                        form.submit();
+                    },
+                    { enableHighAccuracy: true, timeout: 5000 }
+                );
+            } else {
+                alert("Browser Anda tidak mendukung deteksi lokasi. Absensi tetap dicatat tanpa lokasi.");
+                form.submit();
+            }
+        }
+    </script>
 </x-app-layout>
