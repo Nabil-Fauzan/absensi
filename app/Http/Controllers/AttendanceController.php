@@ -60,12 +60,18 @@ class AttendanceController extends Controller
         // Calculate Keterlambatan
         $limitStr = env('OFFICE_CHECK_IN_TIME', '08:00:00');
         $now = Carbon::now();
-        $limitTime = Carbon::createFromFormat('H:i:s', $limitStr);
-        $checkInTimeToday = Carbon::createFromFormat('H:i:s', $now->toTimeString());
+        
+        try {
+            $limitTime = Carbon::parse($limitStr);
+        } catch (\Exception $e) {
+            $limitTime = Carbon::parse('08:00:00');
+        }
+        
+        $limitTime->setDate($now->year, $now->month, $now->day);
         
         $minutesLate = 0;
-        if ($checkInTimeToday->greaterThan($limitTime)) {
-            $minutesLate = $checkInTimeToday->diffInMinutes($limitTime);
+        if ($now->greaterThan($limitTime)) {
+            $minutesLate = $now->diffInMinutes($limitTime);
         }
 
         // If a present record already exists for today, we update it instead of creating a new one (due to DB unique constraint)
@@ -306,6 +312,16 @@ class AttendanceController extends Controller
             $query->where('date', '<=', $request->end_date);
         }
 
+        if ($request->status) {
+            if ($request->status === 'present') {
+                $query->where('status', 'present');
+            } elseif ($request->status === 'izin_sakit') {
+                $query->whereIn('status', ['sick', 'leave']);
+            } elseif ($request->status === 'terlambat') {
+                $query->where('status', 'present')->where('minutes_late', '>', 0);
+            }
+        }
+
         $attendances = $query->orderBy('date', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -335,8 +351,15 @@ class AttendanceController extends Controller
                     default => $att->status
                 };
 
-                $workModeLabel = $att->work_mode === 'wfh' ? 'WFH (Luar Kantor)' : 'WFO (Di Kantor)';
-                $lateLabel = $att->minutes_late > 0 ? "Terlambat {$att->minutes_late} Menit" : 'Tepat Waktu';
+                $workModeLabel = '-';
+                if ($att->status === 'present') {
+                    $workModeLabel = $att->work_mode === 'wfh' ? 'WFH (Luar Kantor)' : 'WFO (Di Kantor)';
+                }
+
+                $lateLabel = '-';
+                if ($att->status === 'present') {
+                    $lateLabel = $att->minutes_late > 0 ? "Terlambat {$att->minutes_late} Menit" : 'Tepat Waktu';
+                }
 
                 $locationIn = $att->latitude_in ? "https://www.google.com/maps/search/?api=1&query={$att->latitude_in},{$att->longitude_in}" : 'Tidak Ada GPS';
                 $locationOut = $att->latitude_out ? "https://www.google.com/maps/search/?api=1&query={$att->latitude_out},{$att->longitude_out}" : 'Tidak Ada GPS';
