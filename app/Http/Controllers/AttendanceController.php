@@ -41,14 +41,31 @@ class AttendanceController extends Controller
             return redirect()->back()->with('error', 'Anda sudah mengajukan izin/sakit hari ini.');
         }
 
-        Attendance::create([
-            'user_id' => $userId,
-            'date' => $today,
-            'check_in' => Carbon::now()->toTimeString(),
-            'status' => 'present',
-            'latitude_in' => $request->latitude,
-            'longitude_in' => $request->longitude,
-        ]);
+        // If a present record already exists for today, we update it instead of creating a new one (due to DB unique constraint)
+        $existingPresent = Attendance::where('user_id', $userId)
+            ->where('date', $today)
+            ->where('status', 'present')
+            ->first();
+
+        if ($existingPresent) {
+            $existingPresent->update([
+                'check_in' => Carbon::now()->toTimeString(),
+                'check_out' => null,
+                'latitude_in' => $request->latitude,
+                'longitude_in' => $request->longitude,
+                'latitude_out' => null,
+                'longitude_out' => null,
+            ]);
+        } else {
+            Attendance::create([
+                'user_id' => $userId,
+                'date' => $today,
+                'check_in' => Carbon::now()->toTimeString(),
+                'status' => 'present',
+                'latitude_in' => $request->latitude,
+                'longitude_in' => $request->longitude,
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Absen masuk berhasil dicatat!');
     }
