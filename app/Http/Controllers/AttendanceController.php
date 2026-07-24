@@ -228,7 +228,19 @@ class AttendanceController extends Controller
                 'belum_absen' => $totalBelumAbsen,
             ];
 
-            return view('dashboard', compact('attendances', 'stats'));
+            $officeLat = env('OFFICE_LATITUDE', -6.873218738309585);
+            $officeLon = env('OFFICE_LONGITUDE', 107.5609385222725);
+            $officeRadius = env('OFFICE_RADIUS_METERS', 100);
+            $checkInTimeLimit = env('OFFICE_CHECK_IN_TIME', '08:00:00');
+
+            $officeConfig = [
+                'latitude' => $officeLat,
+                'longitude' => $officeLon,
+                'radius' => $officeRadius,
+                'check_in_limit' => $checkInTimeLimit,
+            ];
+
+            return view('dashboard', compact('attendances', 'stats', 'officeConfig'));
         }
 
         // Find if there is an open check-in today (present and no check_out)

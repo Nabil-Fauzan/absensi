@@ -1,4 +1,8 @@
 <x-app-layout>
+    <!-- Leaflet CSS & JS for Map Modal -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
             {{ __('Dashboard Absensi') }}
@@ -60,6 +64,33 @@
                             </div>
                         </div>
                         <div class="text-xs mt-3 text-gray-500 dark:text-gray-400">Karyawan belum absen hari ini</div>
+                    </div>
+                </div>
+
+                <!-- Geofencing Status Box -->
+                <div class="mb-6 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-150 dark:border-gray-700 flex flex-wrap items-center justify-between gap-4 text-sm text-gray-600 dark:text-gray-300">
+                    <div class="flex items-center gap-2">
+                        <span class="p-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl">
+                            🏢
+                        </span>
+                        <div>
+                            <div class="font-bold text-gray-850 dark:text-white">Status Konfigurasi Geofencing Kantor</div>
+                            <div class="text-xs text-gray-400">Parameter deteksi kehadiran fisik di kantor</div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-4 text-xs">
+                        <div class="px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl font-medium flex items-center gap-1.5">
+                            <span class="text-gray-400">Koordinat:</span>
+                            <span class="font-mono font-semibold text-gray-800 dark:text-gray-250">{{ $officeConfig['latitude'] }}, {{ $officeConfig['longitude'] }}</span>
+                        </div>
+                        <div class="px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl font-medium flex items-center gap-1.5">
+                            <span class="text-gray-400">Radius Batas:</span>
+                            <span class="font-semibold text-emerald-600 dark:text-emerald-400">{{ $officeConfig['radius'] }} meter</span>
+                        </div>
+                        <div class="px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl font-medium flex items-center gap-1.5">
+                            <span class="text-gray-400">Jam Masuk Standar:</span>
+                            <span class="font-semibold text-rose-600 dark:text-rose-400">{{ \Carbon\Carbon::parse($officeConfig['check_in_limit'])->format('H:i') }} WIB</span>
+                        </div>
                     </div>
                 </div>
 
@@ -129,14 +160,14 @@
                                                 </div>
                                             @endif
                                         </td>
-                                        <td class="p-4">{{ \Carbon\Carbon::parse($att->date)->translatedFormat('d F Y') }}</td>
+                                        <td class="p-4 text-gray-900 dark:text-gray-300 font-semibold">{{ \Carbon\Carbon::parse($att->date)->translatedFormat('d F Y') }}</td>
                                         <td class="p-4">
                                             @if($att->status === 'present')
-                                                <span class="px-2.5 py-1 text-xs font-bold bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400 rounded-full">Hadir</span>
+                                                <span class="px-2.5 py-1 text-xs font-bold bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400 rounded-full">🟢 Hadir</span>
                                             @elseif($att->status === 'sick')
-                                                <span class="px-2.5 py-1 text-xs font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-400 rounded-full">Sakit</span>
+                                                <span class="px-2.5 py-1 text-xs font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-400 rounded-full">🩺 Sakit</span>
                                             @else
-                                                <span class="px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400 rounded-full">Izin</span>
+                                                <span class="px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400 rounded-full">📄 Izin</span>
                                             @endif
                                         </td>
                                         <td class="p-4">
@@ -147,13 +178,13 @@
                                                 </div>
                                             @endif
                                         </td>
-                                        <td class="p-4 font-mono font-bold">{{ $att->check_out ?? '-' }}</td>
+                                        <td class="p-4 font-mono font-bold text-gray-900 dark:text-white">{{ $att->check_out ?? '-' }}</td>
                                         <td class="p-4">
-                                            <div class="flex items-center gap-2 text-xs">
+                                            <div class="flex items-center gap-1 text-xs">
                                                 @if($att->latitude_in)
-                                                    <a href="https://www.google.com/maps/search/?api=1&query={{ $att->latitude_in }},{{ $att->longitude_in }}" target="_blank" class="px-2 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-450 rounded-md hover:underline font-semibold flex items-center gap-0.5">
+                                                    <button type="button" onclick="openMapModal({{ $att->latitude_in }}, {{ $att->longitude_in }}, '{{ addslashes($att->user->name) }}', 'Absen Masuk (Check-In) - {{ $att->check_in }}', '{{ $att->work_mode === 'wfh' ? '🏠 WFH (Luar Kantor)' : '🏢 WFO (Di Kantor)' }}')" class="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-450 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-md font-semibold flex items-center gap-0.5 border border-emerald-150 dark:border-emerald-900/60 transition duration-150 active:scale-95">
                                                         📍 Masuk
-                                                    </a>
+                                                    </button>
                                                 @else
                                                     <span class="text-gray-400">-</span>
                                                 @endif
@@ -161,9 +192,9 @@
                                                 <span class="text-gray-300 dark:text-gray-600">/</span>
                                                 
                                                 @if($att->latitude_out)
-                                                    <a href="https://www.google.com/maps/search/?api=1&query={{ $att->latitude_out }},{{ $att->longitude_out }}" target="_blank" class="px-2 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-450 rounded-md hover:underline font-semibold flex items-center gap-0.5">
+                                                    <button type="button" onclick="openMapModal({{ $att->latitude_out }}, {{ $att->longitude_out }}, '{{ addslashes($att->user->name) }}', 'Absen Keluar (Check-Out) - {{ $att->check_out }}', '{{ $att->work_mode === 'wfh' ? '🏠 WFH (Luar Kantor)' : '🏢 WFO (Di Kantor)' }}')" class="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-450 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-md font-semibold flex items-center gap-0.5 border border-emerald-150 dark:border-emerald-900/60 transition duration-150 active:scale-95">
                                                         📍 Keluar
-                                                    </a>
+                                                    </button>
                                                 @else
                                                     <span class="text-gray-400">-</span>
                                                 @endif
@@ -347,7 +378,97 @@
         </div>
     </div>
 
+    <!-- Map Modal Overlay -->
+    <div id="mapModal" class="fixed inset-0 z-50 hidden overflow-y-auto" role="dialog" aria-modal="true">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm transition-opacity" onclick="closeMapModal()"></div>
+        
+        <!-- Modal wrapper -->
+        <div class="flex min-h-screen items-center justify-center p-4">
+            <div class="relative w-full max-w-2xl transform overflow-hidden rounded-3xl bg-white dark:bg-gray-800 shadow-2xl transition-all border border-gray-100 dark:border-gray-700">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-6 py-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white" id="modalTitle">Lokasi Absensi</h3>
+                        <p class="text-xs text-gray-400 mt-0.5" id="modalSubtitle">Detail koordinat absen karyawan</p>
+                    </div>
+                    <button type="button" onclick="closeMapModal()" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none text-xl p-2">
+                        ✕
+                    </button>
+                </div>
+                
+                <!-- Modal Body (Map Container) -->
+                <div class="p-6">
+                    <div id="mapContainer" class="h-96 w-full rounded-2xl border border-gray-150 dark:border-gray-700 z-10"></div>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="flex justify-end border-t border-gray-100 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-900/50 rounded-b-3xl">
+                    <button type="button" onclick="closeMapModal()" class="px-5 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold rounded-xl text-sm transition duration-150 active:scale-95">
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Leaflet Map modal instance variables
+        let myMap = null;
+        let myMarker = null;
+
+        function openMapModal(latitude, longitude, employeeName, timeLabel, modeText) {
+            // Show modal
+            const modal = document.getElementById('mapModal');
+            modal.classList.remove('hidden');
+            
+            // Set header labels
+            document.getElementById('modalTitle').innerText = `Lokasi Absen: ${employeeName}`;
+            document.getElementById('modalSubtitle').innerText = `${timeLabel} (${modeText})`;
+            
+            // Set map position after a small timeout to let modal display first
+            setTimeout(() => {
+                const centerCoords = [latitude, longitude];
+                
+                if (myMap === null) {
+                    myMap = L.map('mapContainer').setView(centerCoords, 16);
+                    
+                    // Use openstreetmap tiles
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                        attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+                    }).addTo(myMap);
+                } else {
+                    myMap.setView(centerCoords, 16);
+                }
+                
+                // Clear existing marker if any
+                if (myMarker !== null) {
+                    myMap.removeLayer(myMarker);
+                }
+                
+                // Create new marker
+                myMarker = L.marker(centerCoords).addTo(myMap);
+                
+                // Add popup
+                myMarker.bindPopup(`
+                    <div class="text-sm">
+                        <strong class="text-emerald-700">${employeeName}</strong><br>
+                        <span class="text-xs text-gray-500">${timeLabel}</span><br>
+                        <span class="inline-block mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-emerald-50 text-emerald-850 rounded border border-emerald-200">${modeText}</span>
+                    </div>
+                `).openPopup();
+                
+                // Trigger map resize to redraw correctly inside dynamic container
+                myMap.invalidateSize();
+            }, 200);
+        }
+
+        function closeMapModal() {
+            const modal = document.getElementById('mapModal');
+            modal.classList.add('hidden');
+        }
+
         function requestLocationAndSubmit(formId) {
             const form = document.getElementById(formId);
             const button = form.querySelector('button');
