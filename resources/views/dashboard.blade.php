@@ -191,7 +191,7 @@
 
                         <!-- Action Buttons -->
                         <div class="mt-6 flex flex-wrap gap-4">
-                            @if(!$todayAttendance)
+                            @if(!$todayAttendance || ($todayAttendance->status === 'present' && $todayAttendance->check_out))
                                 <form action="{{ route('attendance.check-in') }}" method="POST" id="check-in-form">
                                     @csrf
                                     <input type="hidden" name="latitude" value="">

@@ -20,13 +20,25 @@ class AttendanceController extends Controller
         $userId = Auth::id();
         $today = Carbon::today()->toDateString();
 
-        // Check if already checked in or submitted permission
-        $existing = Attendance::where('user_id', $userId)
+        // Check if there is an active check-in (present and no check_out)
+        $active = Attendance::where('user_id', $userId)
             ->where('date', $today)
+            ->where('status', 'present')
+            ->whereNull('check_out')
             ->first();
 
-        if ($existing) {
-            return redirect()->back()->with('error', 'Anda sudah melakukan absensi atau mengajukan izin hari ini.');
+        if ($active) {
+            return redirect()->back()->with('error', 'Anda sudah melakukan absen masuk dan belum absen keluar.');
+        }
+
+        // Check if already submitted sick/leave today
+        $hasLeave = Attendance::where('user_id', $userId)
+            ->where('date', $today)
+            ->whereIn('status', ['sick', 'leave'])
+            ->first();
+
+        if ($hasLeave) {
+            return redirect()->back()->with('error', 'Anda sudah mengajukan izin/sakit hari ini.');
         }
 
         Attendance::create([
@@ -52,6 +64,8 @@ class AttendanceController extends Controller
         $attendance = Attendance::where('user_id', $userId)
             ->where('date', $today)
             ->where('status', 'present')
+            ->whereNull('check_out')
+            ->latest()
             ->first();
 
         if (!$attendance) {
@@ -144,10 +158,20 @@ class AttendanceController extends Controller
             return view('dashboard', compact('attendances'));
         }
 
-        // Employee sees their own records
+        // Find if there is an open check-in today (present and no check_out)
         $todayAttendance = Attendance::where('user_id', $user->id)
             ->where('date', $today)
+            ->where('status', 'present')
+            ->whereNull('check_out')
             ->first();
+
+        if (!$todayAttendance) {
+            // Fallback to latest attendance of today (checked out or sick/leave)
+            $todayAttendance = Attendance::where('user_id', $user->id)
+                ->where('date', $today)
+                ->latest()
+                ->first();
+        }
 
         $attendances = Attendance::where('user_id', $user->id)
             ->orderBy('date', 'desc')
