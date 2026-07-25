@@ -1,4 +1,7 @@
 <x-guest-layout>
+    <x-slot name="title">Selamat Datang Kembali</x-slot>
+    <x-slot name="subtitle">Silakan masukkan akun terdaftar Anda untuk memulai absensi</x-slot>
+
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 

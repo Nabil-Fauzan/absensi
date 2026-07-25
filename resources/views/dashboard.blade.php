@@ -3,6 +3,9 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
+    <!-- Chart.js for Weekly Attendance Chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
             {{ __('Dashboard Absensi') }}
@@ -161,6 +164,19 @@
                     </form>
                 </div>
 
+                <!-- Weekly Attendance Chart Section -->
+                <div class="mb-6 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700">
+                    <h3 class="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <span>📊 Tren Kehadiran Mingguan</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-250 dark:border-emerald-900/60">
+                            7 Hari Terakhir
+                        </span>
+                    </h3>
+                    <div class="h-64 w-full">
+                        <canvas id="weeklyAttendanceChart"></canvas>
+                    </div>
+                </div>
+
                 <!-- Admin Attendance Log Table -->
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-2xl border border-gray-100 dark:border-gray-700">
                     <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
@@ -265,8 +281,17 @@
                     <!-- Today's Status -->
                     <div class="lg:col-span-2 p-8 bg-emerald-600 rounded-3xl shadow-xl text-white flex flex-col justify-between min-h-[250px]">
                         <div>
-                            <div class="text-sm font-semibold opacity-75 uppercase tracking-wider">Status Absensi Hari Ini</div>
-                            <div class="text-lg font-bold mt-1 opacity-90">{{ \Carbon\Carbon::today()->translatedFormat('l, d F Y') }}</div>
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <div>
+                                    <div class="text-sm font-semibold opacity-75 uppercase tracking-wider">Status Absensi Hari Ini</div>
+                                    <div class="text-lg font-bold mt-1 opacity-90 text-emerald-50">{{ \Carbon\Carbon::today()->translatedFormat('l, d F Y') }}</div>
+                                </div>
+                                <!-- Real-time Live Clock Card (Glassmorphism) -->
+                                <div class="px-5 py-2 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 flex flex-col items-center">
+                                    <span class="text-[9px] uppercase tracking-widest font-bold text-emerald-200">Waktu Sekarang</span>
+                                    <span class="text-xl font-black font-mono tracking-wider mt-0.5" id="liveClock">00:00:00</span>
+                                </div>
+                            </div>
                             
                             <div class="mt-6">
                                 @if(!$todayAttendance)
@@ -695,5 +720,110 @@
                 form.submit();
             }
         }
+
+        // --- REAL-TIME LIVE CLOCK ---
+        function startLiveClock() {
+            const clockEl = document.getElementById('liveClock');
+            if (!clockEl) return;
+            
+            const updateClock = () => {
+                const now = new Date();
+                const hh = String(now.getHours()).padStart(2, '0');
+                const mm = String(now.getMinutes()).padStart(2, '0');
+                const ss = String(now.getSeconds()).padStart(2, '0');
+                clockEl.innerText = `${hh}:${mm}:${ss}`;
+            };
+            
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+
+        // --- WEEKLY TREND CHART ---
+        function initWeeklyChart() {
+            const ctx = document.getElementById('weeklyAttendanceChart');
+            if (!ctx) return;
+            
+            const chartData = @json($chartData ?? []);
+            const labels = chartData.map(item => item.label);
+            const hadir = chartData.map(item => item.hadir);
+            const izin = chartData.map(item => item.izin);
+            const belumAbsen = chartData.map(item => item.belum_absen);
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '🟢 Hadir',
+                            data: hadir,
+                            backgroundColor: '#059669', // Emerald 600
+                            borderRadius: 6,
+                        },
+                        {
+                            label: '🔵 Sakit / Izin',
+                            data: izin,
+                            backgroundColor: '#2563eb', // Blue 600
+                            borderRadius: 6,
+                        },
+                        {
+                            label: '🔴 Belum Absen',
+                            data: belumAbsen,
+                            backgroundColor: '#e11d48', // Rose 600
+                            borderRadius: 6,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563',
+                                font: {
+                                    family: 'Plus Jakarta Sans',
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563',
+                                font: {
+                                    family: 'Plus Jakarta Sans',
+                                }
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            grid: {
+                                color: document.documentElement.classList.contains('dark') ? '#374151' : '#f3f4f6'
+                            },
+                            ticks: {
+                                precision: 0,
+                                color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563',
+                                font: {
+                                    family: 'Plus Jakarta Sans',
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize clock & charts on load
+        document.addEventListener('DOMContentLoaded', () => {
+            startLiveClock();
+            initWeeklyChart();
+        });
     </script>
 </x-app-layout>

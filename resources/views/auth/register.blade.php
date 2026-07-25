@@ -1,4 +1,6 @@
 <x-guest-layout>
+    <x-slot name="title">Daftar Akun Karyawan</x-slot>
+    <x-slot name="subtitle">Buat akun karyawan baru Anda untuk bergabung dengan AbsenKita</x-slot>
     <form method="POST" action="{{ route('register') }}">
         @csrf
 

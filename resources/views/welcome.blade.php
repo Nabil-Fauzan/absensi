@@ -59,13 +59,13 @@
                 <!-- Left Hero Panel -->
                 <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
                     <div class="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full text-xs font-bold uppercase tracking-wider">
-                        <span>✨ Absensi Online Karyawan</span>
+                        <span><span>✨ Absensi Geofencing Cerdas</span></span>
                     </div>
                     <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-tight">
-                        Kelola Kehadiran Karyawan Secara <span class="text-emerald-600 dark:text-emerald-400">Real-Time & Praktis</span>
+                        Pencatatan Kehadiran Karyawan Berbasis <span class="text-emerald-600 dark:text-emerald-400">Lokasi & Deteksi Presisi</span>
                     </h1>
                     <p class="text-lg text-gray-600 dark:text-gray-400 max-w-xl mx-auto lg:mx-0">
-                        Sistem absensi mandiri karyawan terintegrasi. Memudahkan pencatatan jam masuk, jam pulang, serta pengajuan cuti atau keterangan sakit/izin dalam satu sistem terpadu.
+                        Sistem absensi mandiri terpadu. Memudahkan pemantauan kehadiran kerja WFO/WFH secara real-time, pencatatan otomatis keterlambatan, serta rekapitulasi data dengan peta digital.
                     </p>
                     <div class="flex flex-wrap justify-center lg:justify-start gap-4">
                         @auth
@@ -141,33 +141,33 @@
                     <!-- Feature 1 -->
                     <div class="p-6 bg-gray-50 dark:bg-gray-950 rounded-2xl border border-gray-100 dark:border-gray-900 hover:border-emerald-500/30 transition-all space-y-4">
                         <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 rounded-xl flex items-center justify-center text-2xl font-bold">
-                            📲
+                            📍
                         </div>
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Absensi Mandiri</h3>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Geofencing & Jarak Kantor</h3>
                         <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                            Karyawan dapat mencatat kehadiran masuk dan pulang secara real-time langsung melalui dashboard dengan satu ketukan tombol.
+                            Sistem menghitung jarak GPS dari koordinat kantor pusat untuk melabeli status kerja karyawan sebagai WFO (Di Kantor) atau WFH (Luar Kantor).
                         </p>
                     </div>
 
                     <!-- Feature 2 -->
                     <div class="p-6 bg-gray-50 dark:bg-gray-950 rounded-2xl border border-gray-100 dark:border-gray-900 hover:border-emerald-500/30 transition-all space-y-4">
                         <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 rounded-xl flex items-center justify-center text-2xl font-bold">
-                            🩺
+                            ⏱️
                         </div>
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Pengajuan Sakit & Izin</h3>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Deteksi Keterlambatan</h3>
                         <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                            Tidak masuk kerja karena sakit atau kepentingan mendesak? Kirimkan surat keterangan dan alasan Anda secara online tanpa repot.
+                            Mencatat waktu keterlambatan check-in secara presisi berdasarkan aturan toleransi jam masuk kantor yang dikonfigurasi dinamis.
                         </p>
                     </div>
 
                     <!-- Feature 3 -->
                     <div class="p-6 bg-gray-50 dark:bg-gray-950 rounded-2xl border border-gray-100 dark:border-gray-900 hover:border-emerald-500/30 transition-all space-y-4">
                         <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 rounded-xl flex items-center justify-center text-2xl font-bold">
-                            📊
+                            🗺️
                         </div>
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Rekapitulasi HRD</h3>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Peta Lokasi & Dashboard</h3>
                         <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                            Admin dapat memantau tingkat kehadiran staf harian dan melihat riwayat absensi bulanan secara instan dalam rekapitulasi data.
+                            Menyajikan modul peta Leaflet.js interaktif pada panel admin, statistik kehadiran harian, serta tren mingguan untuk rekap HRD.
                         </p>
                     </div>
                 </div>

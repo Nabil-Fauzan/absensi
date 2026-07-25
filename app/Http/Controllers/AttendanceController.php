@@ -261,7 +261,33 @@ class AttendanceController extends Controller
                 'check_in_limit' => $checkInTimeLimit,
             ];
 
-            return view('dashboard', compact('attendances', 'stats', 'officeConfig', 'belumAbsenUsers'));
+            // Calculate weekly attendance data (last 7 days)
+            $chartData = [];
+            for ($i = 6; $i >= 0; $i--) {
+                $d = Carbon::today()->subDays($i);
+                $dateString = $d->toDateString();
+                $dayName = $d->translatedFormat('D'); // Sen, Sel, Rab, etc.
+                
+                $hadirCount = Attendance::where('date', $dateString)
+                    ->where('status', 'present')
+                    ->count();
+                    
+                $izinCount = Attendance::where('date', $dateString)
+                    ->whereIn('status', ['sick', 'leave'])
+                    ->count();
+                    
+                $employeeCount = User::where('role', 'employee')->count();
+                $belumAbsenCount = max(0, $employeeCount - ($hadirCount + $izinCount));
+                
+                $chartData[] = [
+                    'label' => $dayName,
+                    'hadir' => $hadirCount,
+                    'izin' => $izinCount,
+                    'belum_absen' => $belumAbsenCount
+                ];
+            }
+
+            return view('dashboard', compact('attendances', 'stats', 'officeConfig', 'belumAbsenUsers', 'chartData'));
         }
 
         // Find if there is an open check-in today (present and no check_out)
