@@ -1,0 +1,160 @@
+<!-- Filter Form & Export -->
+<div class="mb-6 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700">
+    <div class="flex flex-wrap items-center justify-between mb-4 gap-2">
+        <h4 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <span>Pencarian & Filter Data</span>
+            @if(request('status'))
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-250 dark:border-emerald-900/60">
+                    Filter Status: 
+                    @if(request('status') === 'present') Hadir @endif
+                    @if(request('status') === 'izin_sakit') Sakit/Izin @endif
+                    @if(request('status') === 'terlambat') Terlambat @endif
+                    <button type="button" onclick="clearStatusFilter()" class="hover:text-emerald-900 dark:hover:text-white font-bold ml-1">✕</button>
+                </span>
+            @endif
+        </h4>
+        <!-- Quick Date Buttons -->
+        <div class="flex items-center gap-1.5 text-[11px] font-semibold text-gray-550 dark:text-gray-455">
+            <span>Pintasan Tanggal:</span>
+            <button type="button" onclick="setDateRange('today')" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 rounded-md border border-gray-200 dark:border-gray-800 transition duration-150 active:scale-95">Hari Ini</button>
+            <button type="button" onclick="setDateRange('week')" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 rounded-md border border-gray-200 dark:border-gray-800 transition duration-150 active:scale-95">Minggu Ini</button>
+            <button type="button" onclick="setDateRange('month')" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 rounded-md border border-gray-200 dark:border-gray-800 transition duration-150 active:scale-95">Bulan Ini</button>
+        </div>
+    </div>
+    <form method="GET" action="{{ route('dashboard') }}" id="filterForm" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <input type="hidden" name="status" id="filterStatus" value="{{ request('status') }}">
+        <div>
+            <label for="search" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Cari Karyawan</label>
+            <input type="text" name="search" id="search" value="{{ request('search') }}" placeholder="Ketik nama..." class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+        </div>
+        <div>
+            <label for="start_date" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Tanggal Mulai</label>
+            <input type="date" name="start_date" id="start_date" value="{{ request('start_date') }}" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+        </div>
+        <div>
+            <label for="end_date" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Tanggal Selesai</label>
+            <input type="date" name="end_date" id="end_date" value="{{ request('end_date') }}" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+        </div>
+        <div class="flex gap-2">
+            <button type="submit" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition duration-150 active:scale-95 shadow-md">
+                🔍 Filter
+            </button>
+            <a href="{{ route('dashboard') }}" class="py-2.5 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-750 dark:text-gray-200 font-bold rounded-xl text-sm transition duration-150 active:scale-95 text-center flex items-center justify-center">
+                Reset
+            </a>
+            <a href="{{ route('attendance.export', request()->all()) }}" class="py-2.5 px-4 bg-emerald-100 dark:bg-emerald-950/40 hover:bg-emerald-250 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-450 font-bold rounded-xl text-sm transition duration-150 active:scale-95 text-center flex items-center justify-center gap-1">
+                📥 Ekspor
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Admin Attendance Log Table -->
+<div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-2xl border border-gray-100 dark:border-gray-700">
+    <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-150">Rekap Absensi Karyawan</h3>
+        <span class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 rounded-full">
+            Semua Riwayat
+        </span>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-bold">
+                    <th class="p-4">Karyawan</th>
+                    <th class="p-4">Tanggal</th>
+                    <th class="p-4">Status</th>
+                    <th class="p-4">Jam Masuk</th>
+                    <th class="p-4">Jam Keluar</th>
+                    <th class="p-4">Lokasi</th>
+                    <th class="p-4">Keterangan</th>
+                    <th class="p-4 text-right">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700 text-sm text-gray-700 dark:text-gray-350">
+                @forelse($attendances as $att)
+                    <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition duration-150">
+                        <td class="p-4 font-semibold text-gray-900 dark:text-white">
+                            {{ $att->user->name }}
+                            <div class="text-xs text-gray-400 font-normal">{{ $att->user->email }}</div>
+                            @if($att->status === 'present')
+                                <div class="mt-1">
+                                    @if($att->work_mode === 'wfo')
+                                        <span class="px-2 py-0.5 text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-450 rounded border border-emerald-200 dark:border-emerald-900/60">🏢 WFO (Di Kantor)</span>
+                                    @else
+                                        <span class="px-2 py-0.5 text-[9px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-450 rounded border border-amber-200 dark:border-amber-900/60">🏠 WFH (Luar Kantor)</span>
+                                    @endif
+                                </div>
+                            @endif
+                        </td>
+                        <td class="p-4 text-gray-900 dark:text-gray-300 font-semibold">{{ \Carbon\Carbon::parse($att->date)->translatedFormat('d F Y') }}</td>
+                        <td class="p-4">
+                            @if($att->status === 'present')
+                                <span class="px-2.5 py-1 text-xs font-bold bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400 rounded-full">🟢 Hadir</span>
+                            @elseif($att->status === 'sick')
+                                <span class="px-2.5 py-1 text-xs font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-400 rounded-full">🩺 Sakit</span>
+                            @else
+                                <span class="px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400 rounded-full">📄 Izin</span>
+                            @endif
+                        </td>
+                        <td class="p-4">
+                            <div class="font-mono font-bold text-gray-900 dark:text-white">{{ $att->check_in ?? '-' }}</div>
+                            @if($att->status === 'present' && $att->minutes_late > 0)
+                                <div class="text-[10px] font-semibold text-rose-600 dark:text-rose-400 mt-0.5">
+                                    ⏱ Terlambat {{ $att->minutes_late }} m
+                                </div>
+                            @endif
+                        </td>
+                        <td class="p-4 font-mono font-bold text-gray-900 dark:text-white">{{ $att->check_out ?? '-' }}</td>
+                        <td class="p-4">
+                             <div class="flex items-center gap-1 text-xs">
+                                 @if($att->latitude_in)
+                                     <button type="button" onclick="openMapModal({{ $att->latitude_in }}, {{ $att->longitude_in }}, '{{ addslashes($att->user->name) }}', 'Absen Masuk (Check-In) - {{ $att->check_in }}', '{{ $att->work_mode === 'wfh' ? '🏠 WFH (Luar Kantor)' : '🏢 WFO (Di Kantor)' }}')" class="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-455 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-md font-semibold flex items-center gap-0.5 border border-emerald-150 dark:border-emerald-900/60 transition duration-150 active:scale-95">
+                                         📍 Masuk
+                                     </button>
+                                 @elseif($att->status === 'present')
+                                     <span class="px-2 py-1 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-150 dark:border-rose-900/60 rounded-md font-bold text-[10px]">⚠️ Tanpa GPS</span>
+                                 @else
+                                     <span class="text-gray-400">-</span>
+                                 @endif
+                                 
+                                 <span class="text-gray-300 dark:text-gray-600">/</span>
+                                 
+                                 @if($att->latitude_out)
+                                     <button type="button" onclick="openMapModal({{ $att->latitude_out }}, {{ $att->longitude_out }}, '{{ addslashes($att->user->name) }}', 'Absen Keluar (Check-Out) - {{ $att->check_out }}', '{{ $att->work_mode === 'wfh' ? '🏠 WFH (Luar Kantor)' : '🏢 WFO (Di Kantor)' }}')" class="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-455 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-md font-semibold flex items-center gap-0.5 border border-emerald-150 dark:border-emerald-900/60 transition duration-150 active:scale-95">
+                                         📍 Keluar
+                                     </button>
+                                 @elseif($att->check_out)
+                                     <span class="px-2 py-1 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-150 dark:border-rose-900/60 rounded-md font-bold text-[10px]">⚠️ Tanpa GPS</span>
+                                 @else
+                                     <span class="text-gray-400">-</span>
+                                 @endif
+                             </div>
+                        </td>
+                        <td class="p-4 text-xs text-gray-500 dark:text-gray-400 italic max-w-xs truncate">{{ $att->notes ?? '-' }}</td>
+                        <td class="p-4 text-right">
+                            <div class="flex justify-end gap-1.5">
+                                <button type="button" onclick="openEditAttendanceModal({{ $att->id }}, '{{ $att->status }}', '{{ $att->work_mode }}', {{ $att->minutes_late }}, '{{ addslashes($att->notes) }}')" class="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 hover:bg-blue-100 rounded-lg text-xs font-bold border border-blue-100 dark:border-blue-900/60 active:scale-95 transition">
+                                    ✏️ Edit
+                                </button>
+                                <form action="{{ route('admin.attendance.destroy', $att->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus log absensi ini?')" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="px-2.5 py-1.5 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-455 hover:bg-rose-100 rounded-lg text-xs font-bold border border-rose-100 dark:border-rose-900/60 active:scale-95 transition">
+                                        🗑️ Hapus
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="8" class="p-8 text-center text-gray-400 dark:text-gray-500">
+                            Belum ada data absensi tercatat.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>

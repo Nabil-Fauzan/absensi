@@ -7,9 +7,26 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Dashboard Absensi') }}
-        </h2>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                {{ __('Dashboard Absensi') }}
+            </h2>
+            
+            @if(Auth::user()->isAdmin())
+            <!-- Admin Navigation Tab Pills inside Header -->
+            <div class="flex bg-gray-100 dark:bg-gray-900 p-1 rounded-2xl gap-1 border border-gray-200 dark:border-gray-800 shadow-inner">
+                <button onclick="switchAdminTab('presence-tab')" id="tab-presence-tab" class="admin-tab-btn px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-150 bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 shadow-sm">
+                    📋 Kehadiran
+                </button>
+                <button onclick="switchAdminTab('employee-tab')" id="tab-employee-tab" class="admin-tab-btn px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-150 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                    👥 Karyawan
+                </button>
+                <button onclick="switchAdminTab('settings-tab')" id="tab-settings-tab" class="admin-tab-btn px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-150 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                    ⚙️ Geofencing
+                </button>
+            </div>
+            @endif
+        </div>
     </x-slot>
 
     <div class="py-12">
@@ -29,766 +46,38 @@
 
             @if (Auth::user()->isAdmin())
                 <!-- ================= ADMIN DASHBOARD ================= -->
-
-                <!-- Admin Tabs Switcher -->
-                <div class="flex border-b border-gray-200 dark:border-gray-700 gap-2 mb-6">
-                    <button onclick="switchAdminTab('presence-tab')" id="tab-presence-tab" class="admin-tab-btn py-3 px-6 text-sm font-bold border-b-2 transition duration-150 border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400">
-                        📋 Log Kehadiran & Tren
-                    </button>
-                    <button onclick="switchAdminTab('employee-tab')" id="tab-employee-tab" class="admin-tab-btn py-3 px-6 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
-                        👥 Manajemen Karyawan
-                    </button>
-                    <button onclick="switchAdminTab('settings-tab')" id="tab-settings-tab" class="admin-tab-btn py-3 px-6 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
-                        ⚙️ Pengaturan Kantor
-                    </button>
-                </div>
                 
                 <!-- Tab 1: Presence Log -->
                 <div id="presence-tab" class="admin-tab-content space-y-6">
-                
-                <!-- Stat Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <!-- Hadir Card -->
-                    <div onclick="filterByStatus('present')" class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-150 dark:border-gray-700 flex flex-col justify-between cursor-pointer hover:shadow-lg hover:scale-[1.02] transform transition-all duration-150 active:scale-95 group">
-                        <div>
-                            <div class="flex items-center justify-between">
-                                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider group-hover:text-emerald-500 transition duration-150">Hadir Hari Ini</div>
-                                <span class="text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition duration-150">⚡ Klik filter</span>
-                            </div>
-                            <div class="text-4xl font-extrabold mt-2 text-emerald-600 dark:text-emerald-400">
-                                {{ $stats['hadir'] }}
-                            </div>
-                        </div>
-                        <div class="text-xs mt-3 text-gray-500 dark:text-gray-400">Karyawan masuk kantor (WFO/WFH)</div>
-                    </div>
-                    <!-- Sakit/Izin Card -->
-                    <div onclick="filterByStatus('izin_sakit')" class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-150 dark:border-gray-700 flex flex-col justify-between cursor-pointer hover:shadow-lg hover:scale-[1.02] transform transition-all duration-150 active:scale-95 group">
-                        <div>
-                            <div class="flex items-center justify-between">
-                                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider group-hover:text-blue-500 transition duration-150">Sakit / Izin</div>
-                                <span class="text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition duration-150">⚡ Klik filter</span>
-                            </div>
-                            <div class="text-4xl font-extrabold mt-2 text-blue-600 dark:text-blue-400">
-                                {{ $stats['izin_sakit'] }}
-                            </div>
-                        </div>
-                        <div class="text-xs mt-3 text-gray-500 dark:text-gray-400">Karyawan absen dengan keterangan</div>
-                    </div>
-                    <!-- Terlambat Card -->
-                    <div onclick="filterByStatus('terlambat')" class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-150 dark:border-gray-700 flex flex-col justify-between cursor-pointer hover:shadow-lg hover:scale-[1.02] transform transition-all duration-150 active:scale-95 group">
-                        <div>
-                            <div class="flex items-center justify-between">
-                                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider group-hover:text-amber-500 transition duration-150">Terlambat</div>
-                                <span class="text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition duration-150">⚡ Klik filter</span>
-                            </div>
-                            <div class="text-4xl font-extrabold mt-2 text-amber-600 dark:text-amber-400">
-                                {{ $stats['terlambat'] }}
-                            </div>
-                        </div>
-                        <div class="text-xs mt-3 text-gray-500 dark:text-gray-400">Absen masuk setelah 08:00 WIB</div>
-                    </div>
-                    <!-- Belum Absen Card -->
-                    <div onclick="openBelumAbsenModal()" class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-150 dark:border-gray-700 flex flex-col justify-between cursor-pointer hover:shadow-lg hover:scale-[1.02] transform transition-all duration-150 active:scale-95 group">
-                        <div>
-                            <div class="flex items-center justify-between">
-                                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider group-hover:text-rose-500 transition duration-150">Belum Absen</div>
-                                <span class="text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition duration-150">📋 Lihat daftar</span>
-                            </div>
-                            <div class="text-4xl font-extrabold mt-2 text-rose-600 dark:text-rose-400">
-                                {{ $stats['belum_absen'] }}
-                            </div>
-                        </div>
-                        <div class="text-xs mt-3 text-gray-500 dark:text-gray-400">Karyawan belum absen hari ini</div>
-                    </div>
-                </div>
-
-                <!-- Geofencing Status Box -->
-                <div class="mb-6 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-150 dark:border-gray-700 flex flex-wrap items-center justify-between gap-4 text-sm text-gray-600 dark:text-gray-300">
-                    <div class="flex items-center gap-2">
-                        <span class="p-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl">
-                            🏢
-                        </span>
-                        <div>
-                            <div class="font-bold text-gray-850 dark:text-white">Status Konfigurasi Geofencing Kantor</div>
-                            <div class="text-xs text-gray-400">Parameter deteksi kehadiran fisik di kantor</div>
-                        </div>
-                    </div>
-                    <div class="flex flex-wrap gap-4 text-xs">
-                        <div class="px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl font-medium flex items-center gap-1.5">
-                            <span class="text-gray-400">Koordinat:</span>
-                            <span class="font-mono font-semibold text-gray-800 dark:text-gray-250">{{ $officeConfig['latitude'] }}, {{ $officeConfig['longitude'] }}</span>
-                        </div>
-                        <div class="px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl font-medium flex items-center gap-1.5">
-                            <span class="text-gray-400">Radius Batas:</span>
-                            <span class="font-semibold text-emerald-600 dark:text-emerald-400">{{ $officeConfig['radius'] }} meter</span>
-                        </div>
-                        <div class="px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl font-medium flex items-center gap-1.5">
-                            <span class="text-gray-400">Jam Masuk Standar:</span>
-                            <span class="font-semibold text-rose-600 dark:text-rose-400">{{ \Carbon\Carbon::parse($officeConfig['check_in_limit'])->format('H:i') }} WIB</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Filter Form & Export -->
-                <div class="mb-6 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700">
-                    <div class="flex flex-wrap items-center justify-between mb-4 gap-2">
-                        <h4 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            <span>Pencarian & Filter Data</span>
-                            @if(request('status'))
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-250 dark:border-emerald-900/60">
-                                    Filter Status: 
-                                    @if(request('status') === 'present') Hadir @endif
-                                    @if(request('status') === 'izin_sakit') Sakit/Izin @endif
-                                    @if(request('status') === 'terlambat') Terlambat @endif
-                                    <button type="button" onclick="clearStatusFilter()" class="hover:text-emerald-900 dark:hover:text-white font-bold ml-1">✕</button>
-                                </span>
-                            @endif
-                        </h4>
-                        <!-- Quick Date Buttons -->
-                        <div class="flex items-center gap-1.5 text-[11px] font-semibold text-gray-550 dark:text-gray-450">
-                            <span>Pintasan Tanggal:</span>
-                            <button type="button" onclick="setDateRange('today')" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 rounded-md border border-gray-200 dark:border-gray-800 transition duration-150 active:scale-95">Hari Ini</button>
-                            <button type="button" onclick="setDateRange('week')" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 rounded-md border border-gray-200 dark:border-gray-800 transition duration-150 active:scale-95">Minggu Ini</button>
-                            <button type="button" onclick="setDateRange('month')" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 rounded-md border border-gray-200 dark:border-gray-800 transition duration-150 active:scale-95">Bulan Ini</button>
-                        </div>
-                    </div>
-                    <form method="GET" action="{{ route('dashboard') }}" id="filterForm" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                        <input type="hidden" name="status" id="filterStatus" value="{{ request('status') }}">
-                        <div>
-                            <label for="search" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Cari Karyawan</label>
-                            <input type="text" name="search" id="search" value="{{ request('search') }}" placeholder="Ketik nama..." class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                        </div>
-                        <div>
-                            <label for="start_date" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Tanggal Mulai</label>
-                            <input type="date" name="start_date" id="start_date" value="{{ request('start_date') }}" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                        </div>
-                        <div>
-                            <label for="end_date" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Tanggal Selesai</label>
-                            <input type="date" name="end_date" id="end_date" value="{{ request('end_date') }}" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                        </div>
-                        <div class="flex gap-2">
-                            <button type="submit" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition duration-150 active:scale-95 shadow-md">
-                                🔍 Filter
-                            </button>
-                            <a href="{{ route('dashboard') }}" class="py-2.5 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-750 dark:text-gray-200 font-bold rounded-xl text-sm transition duration-150 active:scale-95 text-center flex items-center justify-center">
-                                Reset
-                            </a>
-                            <a href="{{ route('attendance.export', request()->all()) }}" class="py-2.5 px-4 bg-emerald-100 dark:bg-emerald-950/40 hover:bg-emerald-250 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-450 font-bold rounded-xl text-sm transition duration-150 active:scale-95 text-center flex items-center justify-center gap-1">
-                                📥 Ekspor
-                            </a>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Weekly Attendance Chart Section -->
-                <div class="mb-6 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700">
-                    <h3 class="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        <span>📊 Tren Kehadiran Mingguan</span>
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-250 dark:border-emerald-900/60">
-                            7 Hari Terakhir
-                        </span>
-                    </h3>
-                    <div class="h-64 w-full">
-                        <canvas id="weeklyAttendanceChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Admin Attendance Log Table -->
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-2xl border border-gray-100 dark:border-gray-700">
-                    <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-150">Rekap Absensi Karyawan</h3>
-                        <span class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 rounded-full">
-                            Semua Riwayat
-                        </span>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-bold">
-                                    <th class="p-4">Karyawan</th>
-                                    <th class="p-4">Tanggal</th>
-                                    <th class="p-4">Status</th>
-                                    <th class="p-4">Jam Masuk</th>
-                                    <th class="p-4">Jam Keluar</th>
-                                    <th class="p-4">Lokasi</th>
-                                    <th class="p-4">Keterangan</th>
-                                    <th class="p-4 text-right">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 dark:divide-gray-700 text-sm text-gray-700 dark:text-gray-350">
-                                @forelse($attendances as $att)
-                                    <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition duration-150">
-                                        <td class="p-4 font-semibold text-gray-900 dark:text-white">
-                                            {{ $att->user->name }}
-                                            <div class="text-xs text-gray-400 font-normal">{{ $att->user->email }}</div>
-                                            @if($att->status === 'present')
-                                                <div class="mt-1">
-                                                    @if($att->work_mode === 'wfo')
-                                                        <span class="px-2 py-0.5 text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-450 rounded border border-emerald-200 dark:border-emerald-900/60">🏢 WFO (Di Kantor)</span>
-                                                    @else
-                                                        <span class="px-2 py-0.5 text-[9px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-450 rounded border border-amber-200 dark:border-amber-900/60">🏠 WFH (Luar Kantor)</span>
-                                                    @endif
-                                                </div>
-                                            @endif
-                                        </td>
-                                        <td class="p-4 text-gray-900 dark:text-gray-300 font-semibold">{{ \Carbon\Carbon::parse($att->date)->translatedFormat('d F Y') }}</td>
-                                        <td class="p-4">
-                                            @if($att->status === 'present')
-                                                <span class="px-2.5 py-1 text-xs font-bold bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400 rounded-full">🟢 Hadir</span>
-                                            @elseif($att->status === 'sick')
-                                                <span class="px-2.5 py-1 text-xs font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-400 rounded-full">🩺 Sakit</span>
-                                            @else
-                                                <span class="px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400 rounded-full">📄 Izin</span>
-                                            @endif
-                                        </td>
-                                        <td class="p-4">
-                                            <div class="font-mono font-bold text-gray-900 dark:text-white">{{ $att->check_in ?? '-' }}</div>
-                                            @if($att->status === 'present' && $att->minutes_late > 0)
-                                                <div class="text-[10px] font-semibold text-rose-600 dark:text-rose-400 mt-0.5">
-                                                    ⏱ Terlambat {{ $att->minutes_late }} m
-                                                </div>
-                                            @endif
-                                        </td>
-                                        <td class="p-4 font-mono font-bold text-gray-900 dark:text-white">{{ $att->check_out ?? '-' }}</td>
-                                        <td class="p-4">
-                                             <div class="flex items-center gap-1 text-xs">
-                                                 @if($att->latitude_in)
-                                                     <button type="button" onclick="openMapModal({{ $att->latitude_in }}, {{ $att->longitude_in }}, '{{ addslashes($att->user->name) }}', 'Absen Masuk (Check-In) - {{ $att->check_in }}', '{{ $att->work_mode === 'wfh' ? '🏠 WFH (Luar Kantor)' : '🏢 WFO (Di Kantor)' }}')" class="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-455 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-md font-semibold flex items-center gap-0.5 border border-emerald-150 dark:border-emerald-900/60 transition duration-150 active:scale-95">
-                                                         📍 Masuk
-                                                     </button>
-                                                 @elseif($att->status === 'present')
-                                                     <span class="px-2 py-1 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-150 dark:border-rose-900/60 rounded-md font-bold text-[10px]">⚠️ Tanpa GPS</span>
-                                                 @else
-                                                     <span class="text-gray-400">-</span>
-                                                 @endif
-                                                 
-                                                 <span class="text-gray-300 dark:text-gray-600">/</span>
-                                                 
-                                                 @if($att->latitude_out)
-                                                     <button type="button" onclick="openMapModal({{ $att->latitude_out }}, {{ $att->longitude_out }}, '{{ addslashes($att->user->name) }}', 'Absen Keluar (Check-Out) - {{ $att->check_out }}', '{{ $att->work_mode === 'wfh' ? '🏠 WFH (Luar Kantor)' : '🏢 WFO (Di Kantor)' }}')" class="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-455 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-md font-semibold flex items-center gap-0.5 border border-emerald-150 dark:border-emerald-900/60 transition duration-150 active:scale-95">
-                                                         📍 Keluar
-                                                     </button>
-                                                 @elseif($att->check_out)
-                                                     <span class="px-2 py-1 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-150 dark:border-rose-900/60 rounded-md font-bold text-[10px]">⚠️ Tanpa GPS</span>
-                                                 @else
-                                                     <span class="text-gray-400">-</span>
-                                                 @endif
-                                             </div>
-                                         </td>
-                                         <td class="p-4 text-xs text-gray-500 dark:text-gray-400 italic max-w-xs truncate">{{ $att->notes ?? '-' }}</td>
-                                         <td class="p-4 text-right">
-                                             <div class="flex justify-end gap-1.5">
-                                                 <button type="button" onclick="openEditAttendanceModal({{ $att->id }}, '{{ $att->status }}', '{{ $att->work_mode }}', {{ $att->minutes_late }}, '{{ addslashes($att->notes) }}')" class="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 hover:bg-blue-100 rounded-lg text-xs font-bold border border-blue-100 dark:border-blue-900/60 active:scale-95 transition">
-                                                     ✏️ Edit
-                                                 </button>
-                                                 <form action="{{ route('admin.attendance.destroy', $att->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus log absensi ini?')" class="inline">
-                                                     @csrf
-                                                     @method('DELETE')
-                                                     <button type="submit" class="px-2.5 py-1.5 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-450 hover:bg-rose-100 rounded-lg text-xs font-bold border border-rose-100 dark:border-rose-900/60 active:scale-95 transition">
-                                                         🗑️ Hapus
-                                                     </button>
-                                                 </form>
-                                             </div>
-                                         </td>
-                                     </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="8" class="p-8 text-center text-gray-400 dark:text-gray-500">
-                                            Belum ada data absensi tercatat.
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                    @include('admin.partials.stat-cards')
+                    @include('admin.partials.geofence-status')
+                    @include('admin.partials.weekly-chart')
+                    @include('admin.partials.attendance-table')
                 </div>
 
                 <!-- Tab 2: Employee CRUD Management -->
                 <div id="employee-tab" class="admin-tab-content hidden space-y-6">
-                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-2xl border border-gray-100 dark:border-gray-700">
-                        <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center flex-wrap gap-4">
-                            <div>
-                                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Daftar Akun Karyawan</h3>
-                                <p class="text-xs text-gray-400 mt-0.5">Kelola data profil, email, dan kata sandi akses karyawan</p>
-                            </div>
-                            <button type="button" onclick="openAddEmployeeModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition duration-150 active:scale-95 shadow-md flex items-center gap-1">
-                                ➕ Tambah Karyawan Baru
-                            </button>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-bold">
-                                        <th class="p-4">Nama</th>
-                                        <th class="p-4">Email</th>
-                                        <th class="p-4">Tanggal Daftar</th>
-                                        <th class="p-4 text-right">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100 dark:divide-gray-700 text-sm text-gray-700 dark:text-gray-350">
-                                    @forelse($employees as $emp)
-                                        <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition duration-150">
-                                            <td class="p-4 font-semibold text-gray-900 dark:text-white">{{ $emp->name }}</td>
-                                            <td class="p-4 font-mono text-xs text-gray-500">{{ $emp->email }}</td>
-                                            <td class="p-4 text-xs text-gray-450">{{ $emp->created_at->translatedFormat('d F Y') }}</td>
-                                            <td class="p-4 text-right">
-                                                <div class="flex justify-end gap-2">
-                                                    <button type="button" onclick="openEditEmployeeModal({{ $emp->id }}, '{{ addslashes($emp->name) }}', '{{ $emp->email }}')" class="px-3 py-1.5 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 hover:bg-blue-100 rounded-lg text-xs font-bold transition duration-150 border border-blue-100 dark:border-blue-900/60 active:scale-95">
-                                                        ✏️ Edit
-                                                    </button>
-                                                    <form action="{{ route('admin.employees.destroy', $emp->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus akun karyawan ini beserta seluruh riwayat absensinya secara permanen?')" class="inline">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="px-3 py-1.5 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-450 hover:bg-rose-100 rounded-lg text-xs font-bold transition duration-150 border border-rose-100 dark:border-rose-900/60 active:scale-95">
-                                                            🗑️ Hapus
-                                                        </button>
-                                                    </form>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="4" class="p-8 text-center text-gray-400 dark:text-gray-500">
-                                                Belum ada akun karyawan terdaftar.
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    @include('admin.partials.employees-crud')
                 </div>
 
                 <!-- Tab 3: Office Settings -->
                 <div id="settings-tab" class="admin-tab-content hidden space-y-6">
-                    <div class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 max-w-2xl">
-                        <div class="mb-6">
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Pengaturan Geofencing Kantor</h3>
-                            <p class="text-xs text-gray-400 mt-0.5">Konfigurasi letak geografis wilayah kehadiran karyawan dan waktu batas keterlambatan masuk</p>
-                        </div>
-                        <form action="{{ route('admin.settings.update') }}" method="POST" class="space-y-5 text-sm">
-                            @csrf
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Office Latitude</label>
-                                    <input type="text" name="office_latitude" value="{{ \App\Models\Setting::get('office_latitude', '-6.873218738309585') }}" required class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Office Longitude</label>
-                                    <input type="text" name="office_longitude" value="{{ \App\Models\Setting::get('office_longitude', '107.5609385222725') }}" required class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Radius Toleransi Geofencing (Meter)</label>
-                                <input type="number" name="office_radius_meters" value="{{ \App\Models\Setting::get('office_radius_meters', '100') }}" required min="1" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                                <p class="text-[10px] text-gray-400 mt-1">Jarak radius GPS (dalam satuan meter) untuk melabeli status WFO karyawan.</p>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Batas Jam Masuk Kantor (Keterlambatan)</label>
-                                <input type="text" name="office_check_in_time" value="{{ \App\Models\Setting::get('office_check_in_time', '08:00:00') }}" required placeholder="Contoh: 08:00:00" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                                <p class="text-[10px] text-gray-400 mt-1">Gunakan format 24 jam (HH:MM:SS), misal 08:00:00 atau 08:30:00.</p>
-                            </div>
-
-                            <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition duration-150 active:scale-95 shadow-md text-sm">
-                                💾 Simpan Setelan Kantor
-                            </button>
-                        </form>
-                    </div>
+                    @include('admin.partials.settings-form')
                 </div>
 
             @else
                 <!-- ================= EMPLOYEE DASHBOARD ================= -->
-
-                <!-- Quick Check-In / Check-Out Widget -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    
-                    <!-- Today's Status -->
-                    <div class="lg:col-span-2 p-8 bg-emerald-600 rounded-3xl shadow-xl text-white flex flex-col justify-between min-h-[250px]">
-                        <div>
-                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                <div>
-                                    <div class="text-sm font-semibold opacity-75 uppercase tracking-wider">Status Absensi Hari Ini</div>
-                                    <div class="text-lg font-bold mt-1 opacity-90 text-emerald-50">{{ \Carbon\Carbon::today()->translatedFormat('l, d F Y') }}</div>
-                                </div>
-                                <!-- Real-time Live Clock Card (Glassmorphism) -->
-                                <div class="px-5 py-2 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 flex flex-col items-center">
-                                    <span class="text-[9px] uppercase tracking-widest font-bold text-emerald-200">Waktu Sekarang</span>
-                                    <span class="text-xl font-black font-mono tracking-wider mt-0.5" id="liveClock">00:00:00</span>
-                                </div>
-                            </div>
-                            
-                            <div class="mt-6">
-                                @if(!$todayAttendance)
-                                    <div class="text-xl font-medium text-emerald-100">Belum melakukan absensi hari ini. Silakan klik absen masuk atau ajukan izin.</div>
-                                @elseif($todayAttendance->status === 'present')
-                                    <div class="space-y-2">
-                                        <div class="text-3xl font-extrabold flex items-center gap-2">
-                                            <span class="inline-block w-3 h-3 rounded-full bg-green-400 animate-ping"></span>
-                                            Sudah Absen Masuk
-                                        </div>
-                                        <div class="text-sm text-emerald-100">
-                                            Jam Masuk: <span class="font-mono font-bold bg-white/20 px-2 py-0.5 rounded text-white">{{ $todayAttendance->check_in }}</span>
-                                            @if($todayAttendance->check_out)
-                                                | Jam Pulang: <span class="font-mono font-bold bg-white/20 px-2 py-0.5 rounded text-white">{{ $todayAttendance->check_out }}</span>
-                                            @endif
-                                        </div>
-                                    </div>
-                                @else
-                                    <div class="text-2xl font-bold flex items-center gap-2">
-                                        Status: {{ $todayAttendance->status === 'sick' ? '🩺 Sakit' : '📄 Izin' }}
-                                    </div>
-                                    <p class="text-sm text-emerald-100 mt-2 italic">Keterangan: "{{ $todayAttendance->notes }}"</p>
-                                @endif
-                            </div>
-                        </div>
-
-                        <!-- Action Buttons -->
-                        <div class="mt-6 flex flex-wrap gap-4">
-                            @if(!$todayAttendance || ($todayAttendance->status === 'present' && $todayAttendance->check_out))
-                                <form action="{{ route('attendance.check-in') }}" method="POST" id="check-in-form">
-                                    @csrf
-                                    <input type="hidden" name="latitude" value="">
-                                    <input type="hidden" name="longitude" value="">
-                                    <button type="button" onclick="requestLocationAndSubmit('check-in-form')" class="px-6 py-3 bg-white text-emerald-800 font-bold rounded-xl shadow-lg hover:bg-emerald-50 hover:scale-[1.02] active:scale-95 transition duration-150">
-                                        👉 Absen Masuk (Check-In)
-                                    </button>
-                                </form>
-                            @elseif($todayAttendance->status === 'present' && !$todayAttendance->check_out)
-                                <form action="{{ route('attendance.check-out') }}" method="POST" id="check-out-form">
-                                    @csrf
-                                    <input type="hidden" name="latitude" value="">
-                                    <input type="hidden" name="longitude" value="">
-                                    <button type="button" onclick="requestLocationAndSubmit('check-out-form')" class="px-6 py-3 bg-rose-500 text-white font-bold rounded-xl shadow-lg hover:bg-rose-600 hover:scale-[1.02] active:scale-95 transition duration-150">
-                                        👈 Absen Keluar (Check-Out)
-                                    </button>
-                                </form>
-                            @endif
-                        </div>
-                    </div>
-
-                    <!-- Sick / Leave Application Form -->
-                    <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700">
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                            <span>📅 Pengajuan Sakit / Izin</span>
-                        </h3>
-                        
-                        @if(!$todayAttendance)
-                            <form action="{{ route('attendance.leave') }}" method="POST" class="space-y-4">
-                                @csrf
-                                <div>
-                                    <label for="status" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Pilih Status</label>
-                                    <select name="status" id="status" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500">
-                                        <option value="sick">🩺 Sakit</option>
-                                        <option value="leave">📄 Izin</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label for="notes" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Alasan / Keterangan</label>
-                                    <textarea name="notes" id="notes" rows="3" required placeholder="Tulis alasan tidak masuk kantor..." class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm"></textarea>
-                                </div>
-                                <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition duration-150 active:scale-95 shadow-md">
-                                    Ajukan Keterangan
-                                </button>
-                            </form>
-                        @else
-                            <div class="flex flex-col items-center justify-center h-48 text-center text-gray-400 dark:text-gray-500">
-                                <span>🔒 Pengajuan ditutup karena Anda sudah absensi/izin hari ini.</span>
-                            </div>
-                        @endif
-                    </div>
+                    @include('employee.partials.clock-widget')
+                    @include('employee.partials.leave-form')
                 </div>
-
-                <!-- History Table for Employee -->
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-3xl border border-gray-100 dark:border-gray-700 mt-6">
-                    <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-150">Riwayat Kehadiran Anda</h3>
-                        <span class="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-xs font-semibold text-emerald-600 dark:text-emerald-400 rounded-full">
-                            Bulan Ini
-                        </span>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-bold">
-                                    <th class="p-4">Tanggal</th>
-                                    <th class="p-4">Status</th>
-                                    <th class="p-4">Jam Masuk</th>
-                                    <th class="p-4">Jam Keluar</th>
-                                    <th class="p-4">Keterangan / Alasan</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 dark:divide-gray-700 text-sm text-gray-700 dark:text-gray-350">
-                                @forelse($attendances as $att)
-                                    <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition duration-150">
-                                        <td class="p-4 font-semibold text-gray-900 dark:text-white">
-                                            {{ \Carbon\Carbon::parse($att->date)->translatedFormat('d F Y') }}
-                                            @if($att->status === 'present')
-                                                <div class="mt-1">
-                                                    @if($att->work_mode === 'wfo')
-                                                        <span class="px-2 py-0.5 text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-450 rounded border border-emerald-200 dark:border-emerald-900/60">🏢 WFO</span>
-                                                    @else
-                                                        <span class="px-2 py-0.5 text-[9px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-450 rounded border border-amber-200 dark:border-amber-900/60">🏠 WFH</span>
-                                                    @endif
-                                                </div>
-                                            @endif
-                                        </td>
-                                        <td class="p-4">
-                                            @if($att->status === 'present')
-                                                <span class="px-2.5 py-1 text-xs font-bold bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400 rounded-full">Hadir</span>
-                                            @elseif($att->status === 'sick')
-                                                <span class="px-2.5 py-1 text-xs font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-400 rounded-full">Sakit</span>
-                                            @else
-                                                <span class="px-2.5 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400 rounded-full">Izin</span>
-                                            @endif
-                                        </td>
-                                        <td class="p-4">
-                                            <div class="font-mono font-bold text-gray-900 dark:text-white">{{ $att->check_in ?? '-' }}</div>
-                                            @if($att->status === 'present' && $att->minutes_late > 0)
-                                                <div class="text-[10px] font-semibold text-rose-600 dark:text-rose-400 mt-0.5">
-                                                    ⏱ Terlambat {{ $att->minutes_late }} m
-                                                </div>
-                                            @endif
-                                        </td>
-                                        <td class="p-4 font-mono font-bold">{{ $att->check_out ?? '-' }}</td>
-                                        <td class="p-4 text-xs text-gray-500 dark:text-gray-400 italic max-w-sm truncate">{{ $att->notes ?? '-' }}</td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="5" class="p-8 text-center text-gray-400 dark:text-gray-500">
-                                            Belum ada riwayat absensi.
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
+                @include('employee.partials.history-table')
             @endif
 
         </div>
     </div>
 
-    <!-- Map Modal Overlay -->
-    <div id="mapModal" class="fixed inset-0 z-50 hidden overflow-y-auto" role="dialog" aria-modal="true">
-        <!-- Backdrop -->
-        <div class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm transition-opacity" onclick="closeMapModal()"></div>
-        
-        <!-- Modal wrapper -->
-        <div class="flex min-h-screen items-center justify-center p-4">
-            <div class="relative w-full max-w-2xl transform overflow-hidden rounded-3xl bg-white dark:bg-gray-800 shadow-2xl transition-all border border-gray-100 dark:border-gray-700">
-                <!-- Modal Header -->
-                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-6 py-4">
-                    <div>
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white" id="modalTitle">Lokasi Absensi</h3>
-                        <p class="text-xs text-gray-400 mt-0.5" id="modalSubtitle">Detail koordinat absen karyawan</p>
-                    </div>
-                    <button type="button" onclick="closeMapModal()" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none text-xl p-2">
-                        ✕
-                    </button>
-                </div>
-                
-                <!-- Modal Body (Map Container) -->
-                <div class="p-6">
-                    <div id="mapContainer" class="h-96 w-full rounded-2xl border border-gray-150 dark:border-gray-700 z-10"></div>
-                </div>
-                
-                <!-- Modal Footer -->
-                <div class="flex justify-end border-t border-gray-100 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-900/50 rounded-b-3xl">
-                    <button type="button" id="copyCoordsBtn" onclick="copyMapCoordinates()" class="px-5 py-2.5 bg-emerald-55 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-400 font-bold rounded-xl text-sm transition duration-150 active:scale-95 mr-2">
-                        📋 Salin Koordinat
-                    </button>
-                    <button type="button" onclick="closeMapModal()" class="px-5 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold rounded-xl text-sm transition duration-150 active:scale-95">
-                        Tutup
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    @if(Auth::user()->isAdmin())
-    <!-- Belum Absen Modal -->
-    <div id="belumAbsenModal" class="fixed inset-0 z-50 hidden overflow-y-auto" role="dialog" aria-modal="true">
-        <!-- Backdrop -->
-        <div class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm transition-opacity" onclick="closeBelumAbsenModal()"></div>
-        
-        <!-- Modal wrapper -->
-        <div class="flex min-h-screen items-center justify-center p-4">
-            <div class="relative w-full max-w-lg transform overflow-hidden rounded-3xl bg-white dark:bg-gray-800 shadow-2xl transition-all border border-gray-100 dark:border-gray-700">
-                <!-- Modal Header -->
-                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-6 py-4">
-                    <div>
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                            <span>📋 Karyawan Belum Absen</span>
-                            <span class="px-2 py-0.5 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-455 rounded-full text-xs border border-rose-200">
-                                Hari Ini
-                            </span>
-                        </h3>
-                        <p class="text-xs text-gray-400 mt-0.5">Daftar staf terdaftar yang belum mencatatkan absensi atau izin hari ini</p>
-                    </div>
-                    <button type="button" onclick="closeBelumAbsenModal()" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none text-xl p-2">
-                        ✕
-                    </button>
-                </div>
-                
-                <!-- Modal Body -->
-                <div class="p-6 max-h-96 overflow-y-auto">
-                    @forelse($belumAbsenUsers as $u)
-                        <div class="flex items-center justify-between py-2.5 border-b border-gray-50 dark:border-gray-700 last:border-b-0">
-                            <div class="flex items-center gap-2">
-                                <div class="w-8 h-8 rounded-full bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 flex items-center justify-center font-bold text-xs">
-                                    {{ strtoupper(substr($u->name, 0, 1)) }}
-                                </div>
-                                <div>
-                                    <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ $u->name }}</div>
-                                    <div class="text-xs text-gray-450 dark:text-gray-400">{{ $u->email }}</div>
-                                </div>
-                            </div>
-                            <span class="px-2 py-0.5 bg-gray-50 dark:bg-gray-900 text-gray-400 rounded-md text-[10px] font-bold">
-                                Belum Absen
-                            </span>
-                        </div>
-                    @empty
-                        <div class="py-8 text-center text-gray-455 dark:text-gray-500">
-                            🎉 Luar biasa! Semua karyawan sudah melakukan absensi hari ini.
-                        </div>
-                    @endforelse
-                </div>
-                
-                <!-- Modal Footer -->
-                <div class="flex justify-between border-t border-gray-100 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-900/50 rounded-b-3xl">
-                    @if($belumAbsenUsers->count() > 0)
-                        <button type="button" id="copyBelumAbsenBtn" onclick="copyBelumAbsenList()" class="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-400 font-bold rounded-xl text-xs transition duration-150 active:scale-95">
-                            📋 Salin Daftar Nama
-                        </button>
-                    @else
-                        <div></div>
-                    @endif
-                    <button type="button" onclick="closeBelumAbsenModal()" class="px-5 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold rounded-xl text-sm transition duration-150 active:scale-95">
-                        Tutup
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Add Employee Modal -->
-    <div id="addEmployeeModal" class="fixed inset-0 z-50 hidden overflow-y-auto" role="dialog" aria-modal="true">
-        <div class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm transition-opacity" onclick="closeAddEmployeeModal()"></div>
-        <div class="flex min-h-screen items-center justify-center p-4">
-            <div class="relative w-full max-w-md transform overflow-hidden rounded-3xl bg-white dark:bg-gray-800 shadow-2xl transition-all border border-gray-100 dark:border-gray-700">
-                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-6 py-4">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">➕ Tambah Karyawan Baru</h3>
-                    <button type="button" onclick="closeAddEmployeeModal()" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 text-xl p-2">✕</button>
-                </div>
-                <form action="{{ route('admin.employees.store') }}" method="POST" class="p-6 space-y-4 text-sm">
-                    @csrf
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Nama Karyawan</label>
-                        <input type="text" name="name" required class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Alamat Email</label>
-                        <input type="email" name="email" required class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-550 dark:text-gray-400 mb-1">Kata Sandi</label>
-                        <input type="password" name="password" required minlength="8" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                    </div>
-                    <div class="flex justify-end gap-2 pt-2">
-                        <button type="button" onclick="closeAddEmployeeModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold rounded-xl text-xs active:scale-95">Batal</button>
-                        <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs active:scale-95 shadow-md">Simpan</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Employee Modal -->
-    <div id="editEmployeeModal" class="fixed inset-0 z-50 hidden overflow-y-auto" role="dialog" aria-modal="true">
-        <div class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm transition-opacity" onclick="closeEditEmployeeModal()"></div>
-        <div class="flex min-h-screen items-center justify-center p-4">
-            <div class="relative w-full max-w-md transform overflow-hidden rounded-3xl bg-white dark:bg-gray-800 shadow-2xl transition-all border border-gray-100 dark:border-gray-700">
-                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-6 py-4">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">✏️ Edit Karyawan</h3>
-                    <button type="button" onclick="closeEditEmployeeModal()" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 text-xl p-2">✕</button>
-                </div>
-                <form id="editEmployeeForm" method="POST" class="p-6 space-y-4 text-sm">
-                    @csrf
-                    @method('PATCH')
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Nama Karyawan</label>
-                        <input type="text" name="name" id="editEmpName" required class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Alamat Email</label>
-                        <input type="email" name="email" id="editEmpEmail" required class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Kata Sandi Baru (Opsional)</label>
-                        <input type="password" name="password" minlength="8" placeholder="Kosongkan jika tidak ingin diubah" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                    </div>
-                    <div class="flex justify-end gap-2 pt-2">
-                        <button type="button" onclick="closeEditEmployeeModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold rounded-xl text-xs active:scale-95">Batal</button>
-                        <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs active:scale-95 shadow-md">Simpan Perubahan</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Attendance Modal -->
-    <div id="editAttendanceModal" class="fixed inset-0 z-50 hidden overflow-y-auto" role="dialog" aria-modal="true">
-        <div class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm transition-opacity" onclick="closeEditAttendanceModal()"></div>
-        <div class="flex min-h-screen items-center justify-center p-4">
-            <div class="relative w-full max-w-md transform overflow-hidden rounded-3xl bg-white dark:bg-gray-800 shadow-2xl transition-all border border-gray-100 dark:border-gray-700">
-                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-6 py-4">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">✏️ Koreksi Absensi Karyawan</h3>
-                    <button type="button" onclick="closeEditAttendanceModal()" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 text-xl p-2">✕</button>
-                </div>
-                <form id="editAttendanceForm" method="POST" class="p-6 space-y-4 text-sm">
-                    @csrf
-                    @method('PATCH')
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Status Kehadiran</label>
-                        <select name="status" id="editAttStatus" onchange="toggleEditAttFields()" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500">
-                            <option value="present">🟢 Hadir</option>
-                            <option value="sick">🩺 Sakit</option>
-                            <option value="leave">📄 Izin</option>
-                        </select>
-                    </div>
-                    
-                    <div id="editAttPresentFields" class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Mode Kerja</label>
-                            <select name="work_mode" id="editAttWorkMode" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500">
-                                <option value="wfo">🏢 WFO (Di Kantor)</option>
-                                <option value="wfh">🏠 WFH (Luar Kantor)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-550 dark:text-gray-400 mb-1">Keterlambatan (Menit)</label>
-                            <input type="number" name="minutes_late" id="editAttMinutesLate" min="0" required class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-xs font-bold text-gray-550 dark:text-gray-400 mb-1">Alasan / Catatan</label>
-                        <textarea name="notes" id="editAttNotes" rows="2" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm"></textarea>
-                    </div>
-                    
-                    <div class="flex justify-end gap-2 pt-2">
-                        <button type="button" onclick="closeEditAttendanceModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold rounded-xl text-xs active:scale-95">Batal</button>
-                        <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs active:scale-95 shadow-md">Simpan Koreksi</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    @endif
+    @include('admin.partials.modals')
 
     <script>
         // Leaflet Map modal instance variables
@@ -836,7 +125,7 @@
                     <div class="text-sm">
                         <strong class="text-emerald-700">${employeeName}</strong><br>
                         <span class="text-xs text-gray-500">${timeLabel}</span><br>
-                        <span class="inline-block mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-emerald-50 text-emerald-850 rounded border border-emerald-250">${modeText}</span>
+                        <span class="inline-block mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-emerald-55 text-emerald-850 rounded border border-emerald-250">${modeText}</span>
                     </div>
                 `).openPopup();
                 
@@ -858,23 +147,12 @@
                     btn.innerHTML = '✅ Tersalin!';
                     setTimeout(() => {
                         btn.innerHTML = origText;
-                    }, 1500);
-                }).catch(err => {
-                    alert('Gagal menyalin koordinat: ' + err);
+                    }, 2000);
                 });
             }
         }
 
-        function filterByStatus(statusVal) {
-            document.getElementById('filterStatus').value = statusVal;
-            document.getElementById('filterForm').submit();
-        }
-
-        function clearStatusFilter() {
-            document.getElementById('filterStatus').value = '';
-            document.getElementById('filterForm').submit();
-        }
-
+        @if(Auth::user()->isAdmin())
         function openBelumAbsenModal() {
             document.getElementById('belumAbsenModal').classList.remove('hidden');
         }
@@ -884,113 +162,125 @@
         }
 
         function copyBelumAbsenList() {
-            const list = @json(isset($belumAbsenUsers) ? $belumAbsenUsers->pluck('name') : []);
-            if (list.length > 0) {
-                const text = list.join('\n');
-                navigator.clipboard.writeText(text).then(() => {
-                    const btn = document.getElementById('copyBelumAbsenBtn');
-                    const origText = btn.innerHTML;
-                    btn.innerHTML = '✅ Tersalin!';
-                    setTimeout(() => {
-                        btn.innerHTML = origText;
-                    }, 1500);
-                });
-            }
+            const names = [
+                @foreach($belumAbsenUsers as $u)
+                    "{{ $u->name }} ({{ $u->email }})",
+                @endforeach
+            ];
+            
+            const textToCopy = "Daftar Karyawan Belum Absen Hari Ini:\n" + names.map((n, i) => `${i+1}. ${n}`).join("\n");
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const btn = document.getElementById('copyBelumAbsenBtn');
+                const origText = btn.innerHTML;
+                btn.innerHTML = '✅ Berhasil Disalin!';
+                setTimeout(() => {
+                    btn.innerHTML = origText;
+                }, 2000);
+            });
+        }
+        @endif
+
+        // --- Live Clock Script ---
+        function startLiveClock() {
+            const clockEl = document.getElementById('liveClock');
+            if (!clockEl) return;
+            
+            setInterval(() => {
+                const now = new Date();
+                const hrs = String(now.getHours()).padStart(2, '0');
+                const mins = String(now.getMinutes()).padStart(2, '0');
+                const secs = String(now.getSeconds()).padStart(2, '0');
+                clockEl.textContent = `${hrs}:${mins}:${secs}`;
+            }, 1000);
         }
 
-        function setDateRange(rangeType) {
-            const startDateInput = document.getElementById('start_date');
-            const endDateInput = document.getElementById('end_date');
-            const today = new Date();
-            
-            const formatDate = (date) => {
-                const yyyy = date.getFullYear();
-                const mm = String(date.getMonth() + 1).padStart(2, '0');
-                const dd = String(date.getDate()).padStart(2, '0');
-                return `${yyyy}-${mm}-${dd}`;
-            };
-
-            if (rangeType === 'today') {
-                const dateStr = formatDate(today);
-                startDateInput.value = dateStr;
-                endDateInput.value = dateStr;
-            } else if (rangeType === 'week') {
-                const currentDay = today.getDay();
-                const diff = today.getDate() - currentDay + (currentDay === 0 ? -6 : 1);
-                const monday = new Date(today.setDate(diff));
-                startDateInput.value = formatDate(monday);
-                endDateInput.value = formatDate(new Date());
-            } else if (rangeType === 'month') {
-                const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-                startDateInput.value = formatDate(firstDay);
-                endDateInput.value = formatDate(new Date());
-            }
-            
-            // Auto submit the form to apply date filters immediately!
-            document.getElementById('filterForm').submit();
-        }
-
+        // --- Geolocation Request for Check-In / Check-Out ---
         function requestLocationAndSubmit(formId) {
             const form = document.getElementById(formId);
-            const button = form.querySelector('button');
-            
-            // Set loading state
-            button.disabled = true;
-            button.innerHTML = `
-                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-current inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Menghubungkan GPS...
-            `;
+            if (!form) return;
             
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
+                        // Set coords value
                         form.querySelector('input[name="latitude"]').value = position.coords.latitude;
                         form.querySelector('input[name="longitude"]').value = position.coords.longitude;
                         form.submit();
                     },
                     (error) => {
-                        console.warn("Geolocation warning: " + error.message);
-                        alert("Gagal mendapatkan lokasi GPS: " + error.message + ". Absensi tetap dicatat tanpa lokasi.");
+                        // Fallback - submit without coordinate data (will WFH)
+                        console.warn("Akses GPS ditolak, mengisi WFH secara default.");
                         form.submit();
                     },
                     { enableHighAccuracy: true, timeout: 5000 }
                 );
             } else {
-                alert("Browser Anda tidak mendukung deteksi lokasi. Absensi tetap dicatat tanpa lokasi.");
                 form.submit();
             }
         }
 
-        // --- REAL-TIME LIVE CLOCK ---
-        function startLiveClock() {
-            const clockEl = document.getElementById('liveClock');
-            if (!clockEl) return;
-            
-            const updateClock = () => {
-                const now = new Date();
-                const hh = String(now.getHours()).padStart(2, '0');
-                const mm = String(now.getMinutes()).padStart(2, '0');
-                const ss = String(now.getSeconds()).padStart(2, '0');
-                clockEl.innerText = `${hh}:${mm}:${ss}`;
-            };
-            
-            updateClock();
-            setInterval(updateClock, 1000);
+        // --- Filter Helpers ---
+        function filterByStatus(status) {
+            document.getElementById('filterStatus').value = status;
+            document.getElementById('filterForm').submit();
         }
 
-        // --- WEEKLY TREND CHART ---
+        function clearStatusFilter() {
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterForm').submit();
+        }
+
+        function setDateRange(range) {
+            const startInput = document.getElementById('start_date');
+            const endInput = document.getElementById('end_date');
+            const now = new Date();
+            
+            // Helper to format Date to YYYY-MM-DD local string
+            const formatDate = (d) => {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+            
+            if (range === 'today') {
+                startInput.value = formatDate(now);
+                endInput.value = formatDate(now);
+            } else if (range === 'week') {
+                const firstDay = new Date(now.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1))); // Monday
+                const lastDay = new Date(firstDay);
+                lastDay.setDate(lastDay.getDate() + 6); // Sunday
+                
+                startInput.value = formatDate(firstDay);
+                endInput.value = formatDate(lastDay);
+            } else if (range === 'month') {
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                
+                startInput.value = formatDate(firstDay);
+                endInput.value = formatDate(lastDay);
+            }
+            
+            document.getElementById('filterForm').submit();
+        }
+
+        // --- Chart.js Weekly rendering ---
+        @if(Auth::user()->isAdmin())
         function initWeeklyChart() {
             const ctx = document.getElementById('weeklyAttendanceChart');
             if (!ctx) return;
             
-            const chartData = @json($chartData ?? []);
-            const labels = chartData.map(item => item.label);
-            const hadir = chartData.map(item => item.hadir);
-            const izin = chartData.map(item => item.izin);
-            const belumAbsen = chartData.map(item => item.belum_absen);
+            const rawData = @json($chartData);
+            const labels = rawData.map(d => d.label);
+            const hadirData = rawData.map(d => d.hadir);
+            const izinData = rawData.map(d => d.izin);
+            const belumAbsenData = rawData.map(d => d.belum_absen);
+            
+            // Check dark mode
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? '#374151' : '#f3f4f6';
+            const labelColor = isDark ? '#9ca3af' : '#4b5563';
             
             new Chart(ctx, {
                 type: 'bar',
@@ -999,20 +289,20 @@
                     datasets: [
                         {
                             label: '🟢 Hadir',
-                            data: hadir,
-                            backgroundColor: '#059669', // Emerald 600
+                            data: hadirData,
+                            backgroundColor: '#10b981', // Emerald 500
                             borderRadius: 6,
                         },
                         {
-                            label: '🔵 Sakit / Izin',
-                            data: izin,
-                            backgroundColor: '#2563eb', // Blue 600
+                            label: '🩺/📄 Sakit/Izin',
+                            data: izinData,
+                            backgroundColor: '#3b82f6', // Blue 500
                             borderRadius: 6,
                         },
                         {
-                            label: '🔴 Belum Absen',
-                            data: belumAbsen,
-                            backgroundColor: '#e11d48', // Rose 600
+                            label: '❌ Belum Absen',
+                            data: belumAbsenData,
+                            backgroundColor: '#f43f5e', // Rose 500
                             borderRadius: 6,
                         }
                     ]
@@ -1020,48 +310,36 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563',
-                                font: {
-                                    family: 'Plus Jakarta Sans',
-                                    weight: 'bold'
-                                }
-                            }
-                        }
-                    },
                     scales: {
                         x: {
                             stacked: true,
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563',
-                                font: {
-                                    family: 'Plus Jakarta Sans',
-                                }
-                            }
+                            grid: { display: false },
+                            ticks: { color: labelColor }
                         },
                         y: {
                             stacked: true,
-                            grid: {
-                                color: document.documentElement.classList.contains('dark') ? '#374151' : '#f3f4f6'
-                            },
-                            ticks: {
-                                precision: 0,
-                                color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563',
-                                font: {
-                                    family: 'Plus Jakarta Sans',
-                                }
+                            grid: { color: gridColor },
+                            ticks: { 
+                                stepSize: 1,
+                                color: labelColor 
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: labelColor,
+                                boxWidth: 12,
+                                padding: 15,
+                                font: { weight: 'bold', size: 11 }
                             }
                         }
                     }
                 }
             });
         }
+        @endif
 
         // Initialize clock & charts on load
         document.addEventListener('DOMContentLoaded', () => {
@@ -1075,14 +353,14 @@
         function switchAdminTab(tabId) {
             document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.admin-tab-btn').forEach(btn => {
-                btn.classList.remove('border-emerald-600', 'text-emerald-600', 'dark:border-emerald-400', 'dark:text-emerald-400');
-                btn.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+                btn.classList.remove('bg-white', 'dark:bg-gray-800', 'text-emerald-600', 'dark:text-emerald-400', 'shadow-sm');
+                btn.classList.add('text-gray-500', 'dark:text-gray-400');
             });
             
             document.getElementById(tabId).classList.remove('hidden');
             const activeBtn = document.getElementById('tab-' + tabId);
-            activeBtn.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
-            activeBtn.classList.add('border-emerald-600', 'text-emerald-600', 'dark:border-emerald-400', 'dark:text-emerald-400');
+            activeBtn.classList.remove('text-gray-500', 'dark:text-gray-400');
+            activeBtn.classList.add('bg-white', 'dark:bg-gray-800', 'text-emerald-600', 'dark:text-emerald-400', 'shadow-sm');
         }
 
         // --- EMPLOYEE MODAL CRUD ---
