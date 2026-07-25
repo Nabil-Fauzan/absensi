@@ -482,6 +482,7 @@
         </div>
     </div>
 
+    @if(Auth::user()->isAdmin())
     <!-- Belum Absen Modal -->
     <div id="belumAbsenModal" class="fixed inset-0 z-50 hidden overflow-y-auto" role="dialog" aria-modal="true">
         <!-- Backdrop -->
@@ -495,7 +496,7 @@
                     <div>
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
                             <span>📋 Karyawan Belum Absen</span>
-                            <span class="px-2 py-0.5 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-450 rounded-full text-xs border border-rose-200">
+                            <span class="px-2 py-0.5 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-455 rounded-full text-xs border border-rose-200">
                                 Hari Ini
                             </span>
                         </h3>
@@ -524,7 +525,7 @@
                             </span>
                         </div>
                     @empty
-                        <div class="py-8 text-center text-gray-450 dark:text-gray-500">
+                        <div class="py-8 text-center text-gray-455 dark:text-gray-500">
                             🎉 Luar biasa! Semua karyawan sudah melakukan absensi hari ini.
                         </div>
                     @endforelse
@@ -546,6 +547,7 @@
             </div>
         </div>
     </div>
+    @endif
 
     <script>
         // Leaflet Map modal instance variables
@@ -641,7 +643,7 @@
         }
 
         function copyBelumAbsenList() {
-            const list = @json($belumAbsenUsers->pluck('name'));
+            const list = @json(isset($belumAbsenUsers) ? $belumAbsenUsers->pluck('name') : []);
             if (list.length > 0) {
                 const text = list.join('\n');
                 navigator.clipboard.writeText(text).then(() => {
