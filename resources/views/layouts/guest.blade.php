@@ -60,7 +60,15 @@
                 <span class="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">AbsenKita</span>
             </div>
 
-            <div class="w-full sm:max-w-md bg-white dark:bg-gray-900 p-8 md:p-10 rounded-[2rem] shadow-2xl border border-gray-100 dark:border-gray-800 transition-colors">
+            <div class="w-full sm:max-w-md bg-white dark:bg-gray-900 p-8 md:p-10 rounded-[2rem] shadow-2xl border border-gray-100 dark:border-gray-800 transition-colors relative pt-16">
+                <!-- Back to Landing Page Button -->
+                <a href="/" class="absolute top-6 left-8 md:left-10 flex items-center gap-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors group">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5 transform group-hover:-translate-x-0.5 transition-transform">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+                    </svg>
+                    Kembali ke Beranda
+                </a>
+
                 <div class="mb-6 text-center md:text-left">
                     <h3 class="text-2xl font-extrabold text-gray-900 dark:text-white">
                         {{ $title ?? 'Portal AbsenKita' }}
