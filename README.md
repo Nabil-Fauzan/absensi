@@ -1,58 +1,114 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# ⏰ AbsenKita - Sistem Absensi Online & Geofencing Karyawan
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+AbsenKita adalah platform manajemen kehadiran mandiri karyawan berbasis web yang dilengkapi fitur **Geofencing GPS**, **Deteksi Keterlambatan**, **Dashboard Statistik Cerdas**, **Peta Interaktif Leaflet.js**, serta pelaporan otomatis.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 🛠️ Tech Stack & Pustaka
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+* **Core Backend**: Laravel 13.x (PHP 8.5+)
+* **Frontend**: Tailwind CSS, Blade Templates (Laravel Breeze Starter-kit)
+* **Peta Digital**: Leaflet.js (Peta interaktif berbasis open-source OpenStreetMap)
+* **Grafik Dashboard**: Chart.js (Stacked bar chart untuk tren kehadiran)
+* **Pengujian**: Pest Testing Framework (PHPUnit wrapper)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 🌟 Fitur Utama
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 1. 📍 Geofencing Pelacakan Lokasi (WFO vs WFH)
+* Menghitung jarak GPS karyawan saat absen masuk/pulang dengan titik pusat koordinat kantor menggunakan rumus **Haversine**.
+* Secara otomatis melabeli absensi dengan status:
+  * **🏢 WFO (Di Kantor)** jika berada di dalam radius toleransi kantor (default: 100m).
+  * **🏠 WFH (Luar Kantor)** jika berada di luar radius kantor.
+* Tombol koordinat pada log admin memicu **Modal Peta Leaflet.js** terintegrasi secara dinamis untuk meninjau lokasi persis kehadiran staf tanpa membuka tab baru.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### ⏱️ 2. Deteksi Keterlambatan Otomatis (Late Detection)
+* Sistem mencatat jam check-in karyawan dan membandingkannya dengan batas waktu absensi masuk kantor (default: `08:00:00 WIB`).
+* Selisih menit keterlambatan dihitung otomatis dan ditampilkan dalam badge merah peringatan `⏱ Terlambat X m` baik di dashboard karyawan maupun panel admin.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### 📊 3. Panel Dashboard Statistik Admin (SaaS Style)
+* **4 Kartu Ringkasan Harian**: Menyajikan data Hadir, Sakit/Izin, Terlambat, dan Belum Absen harian secara real-time.
+* **Daftar Belum Absen**: Mengklik kartu "Belum Absen" memicu modal pop-up yang menyajikan nama & email staf yang belum check-in hari ini beserta tombol sekali klik untuk menyalin daftar nama tersebut.
+* **Grafik Tren Mingguan**: Diagram batang bertumpuk interaktif menggunakan Chart.js untuk menganalisis grafik kehadiran 7 hari terakhir.
+* **Filter Interaktif**: Kartu statistik atas dapat diklik untuk menyaring tabel rekapitulasi data secara instan.
 
-## Agentic Development
+### 📅 4. Sistem Filter & Ekspor CSV Berkinerja Tinggi
+* Menyaring rekapitulasi kehadiran berdasarkan **Pencarian Nama Karyawan**, **Rentang Tanggal**, dan **Filter Status Cepat**.
+* Ekspor data ke format `.csv` dengan mematuhi filter pencarian aktif yang memuat detail waktu check-in, check-out, keterangan sakit/izin, mode kerja (WFO/WFH), dan akumulasi menit terlambat.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### 🕒 5. Widget Jam Digital Berjalan (Real-time Live Clock)
+* Menyematkan jam digital berjalan berdesain kaca (*glassmorphism*) yang berdetak setiap detiknya pada panel check-in karyawan untuk ketepatan waktu absensi.
 
-```bash
-composer require laravel/boost --dev
+### ⚠️ 6. Deteksi Keamanan Absen Tanpa GPS
+* Jika karyawan mematikan GPS browser atau menolak izin akses lokasi, sistem mencatat absensi tetapi menandai kolom lokasi dengan indikator merah mencolok **`⚠️ Tanpa GPS`** untuk melacak kejujuran absensi.
 
-php artisan boost:install
+---
+
+## ⚙️ Konfigurasi Environment (`.env`)
+
+Anda dapat menyesuaikan parameter geofencing dan aturan jam masuk kantor melalui file `.env`:
+
+```env
+# Koordinat Kantor Pusat (Default: Bandung/Cimahi)
+OFFICE_LATITUDE=-6.873218738309585
+OFFICE_LONGITUDE=107.5609385222725
+
+# Radius Toleransi Geofencing (dalam Meter)
+OFFICE_RADIUS_METERS=100
+
+# Batas Waktu Jam Masuk Kantor
+OFFICE_CHECK_IN_TIME=08:00:00
+
+# Pengaturan Timezone Indonesia (WIB)
+APP_TIMEZONE=Asia/Jakarta
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+---
 
-## Contributing
+## 🚀 Panduan Instalasi Lokal
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+1. **Clone Repositori**:
+   ```bash
+   git clone https://github.com/Nabil-Fauzan/absensi.git
+   cd absensi
+   ```
 
-## Code of Conduct
+2. **Instalasi Dependensi**:
+   ```bash
+   composer install
+   npm install
+   ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+3. **Duplikasi Konfigurasi Environment**:
+   Salin berkas `.env.example` ke `.env` lalu sesuaikan kredensial koneksi database MySQL Anda.
 
-## Security Vulnerabilities
+4. **Generate App Key & Jalankan Migrasi / Seed**:
+   ```bash
+   php artisan key:generate
+   php artisan migrate --seed
+   ```
+   *(Perintah seeder akan membuat akun admin utama secara otomatis)*.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+5. **Kredensial Default Akun Admin**:
+   * **Email**: `admin@gmail.com`
+   * **Password**: `123456789`
 
-## License
+6. **Jalankan Aplikasi**:
+   Jalankan server pengembangan Laravel dan bundler aset Tailwind:
+   ```bash
+   php artisan serve
+   # Di tab terminal terpisah:
+   npm run dev
+   ```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+---
+
+## 🧪 Pengujian Sistem (Automated Tests)
+
+Gunakan perintah di bawah ini untuk memverifikasi fungsionalitas logika sistem absensi, geofencing, cuti/sakit, dan email notification lewat Pest Test Suites:
+
+```bash
+php artisan test
+```
+*(Seluruh 25 unit pengujian harus menunjukkan status **PASSED**)*.
