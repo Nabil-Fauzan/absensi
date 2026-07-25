@@ -77,7 +77,9 @@
         </div>
     </div>
 
-    @include('admin.partials.modals')
+    @if(Auth::user()->isAdmin())
+        @include('admin.partials.modals')
+    @endif
 
     <script>
         // Leaflet Map modal instance variables
