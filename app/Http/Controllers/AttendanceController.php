@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Hash;
 use App\Models\Attendance;
 use App\Models\User;
 use App\Mail\LeaveRequestedMail;
@@ -43,9 +44,9 @@ class AttendanceController extends Controller
         }
 
         // Calculate Geofencing
-        $officeLat = env('OFFICE_LATITUDE', -6.873218738309585);
-        $officeLon = env('OFFICE_LONGITUDE', 107.5609385222725);
-        $officeRadius = env('OFFICE_RADIUS_METERS', 100);
+        $officeLat = \App\Models\Setting::get('office_latitude', env('OFFICE_LATITUDE', -6.873218738309585));
+        $officeLon = \App\Models\Setting::get('office_longitude', env('OFFICE_LONGITUDE', 107.5609385222725));
+        $officeRadius = \App\Models\Setting::get('office_radius_meters', env('OFFICE_RADIUS_METERS', 100));
         
         $workMode = 'wfo';
         if ($request->latitude && $request->longitude) {
@@ -58,7 +59,7 @@ class AttendanceController extends Controller
         }
 
         // Calculate Keterlambatan
-        $limitStr = env('OFFICE_CHECK_IN_TIME', '08:00:00');
+        $limitStr = \App\Models\Setting::get('office_check_in_time', env('OFFICE_CHECK_IN_TIME', '08:00:00'));
         $now = Carbon::now();
         
         try {
@@ -249,18 +250,18 @@ class AttendanceController extends Controller
                 'belum_absen' => $totalBelumAbsen,
             ];
 
-            $officeLat = env('OFFICE_LATITUDE', -6.873218738309585);
-            $officeLon = env('OFFICE_LONGITUDE', 107.5609385222725);
-            $officeRadius = env('OFFICE_RADIUS_METERS', 100);
-            $checkInTimeLimit = env('OFFICE_CHECK_IN_TIME', '08:00:00');
-
+            $officeLat = \App\Models\Setting::get('office_latitude', env('OFFICE_LATITUDE', -6.873218738309585));
+            $officeLon = \App\Models\Setting::get('office_longitude', env('OFFICE_LONGITUDE', 107.5609385222725));
+            $officeRadius = \App\Models\Setting::get('office_radius_meters', env('OFFICE_RADIUS_METERS', 100));
+            $checkInTimeLimit = \App\Models\Setting::get('office_check_in_time', env('OFFICE_CHECK_IN_TIME', '08:00:00'));
+ 
             $officeConfig = [
                 'latitude' => $officeLat,
                 'longitude' => $officeLon,
                 'radius' => $officeRadius,
                 'check_in_limit' => $checkInTimeLimit,
             ];
-
+ 
             // Calculate weekly attendance data (last 7 days)
             $chartData = [];
             for ($i = 6; $i >= 0; $i--) {
@@ -287,7 +288,10 @@ class AttendanceController extends Controller
                 ];
             }
 
-            return view('dashboard', compact('attendances', 'stats', 'officeConfig', 'belumAbsenUsers', 'chartData'));
+            // Load all registered employees for CRUD administration
+            $employees = User::where('role', 'employee')->orderBy('name', 'asc')->get();
+ 
+            return view('dashboard', compact('attendances', 'stats', 'officeConfig', 'belumAbsenUsers', 'chartData', 'employees'));
         }
 
         // Find if there is an open check-in today (present and no check_out)
@@ -428,5 +432,147 @@ class AttendanceController extends Controller
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
         
         return $earthRadius * $c;
+    }
+
+    /**
+     * Update geofencing limits and standard entrance office hours.
+     */
+    public function updateSettings(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'office_latitude' => 'required|numeric',
+            'office_longitude' => 'required|numeric',
+            'office_radius_meters' => 'required|integer|min:1',
+            'office_check_in_time' => 'required',
+        ]);
+
+        \App\Models\Setting::set('office_latitude', $request->office_latitude);
+        \App\Models\Setting::set('office_longitude', $request->office_longitude);
+        \App\Models\Setting::set('office_radius_meters', $request->office_radius_meters);
+        \App\Models\Setting::set('office_check_in_time', $request->office_check_in_time);
+
+        return back()->with('success', 'Pengaturan geofencing dan jam kantor berhasil diperbarui!');
+    }
+
+    /**
+     * Store a newly created employee.
+     */
+    public function storeEmployee(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8',
+        ]);
+
+        User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'employee',
+        ]);
+
+        return back()->with('success', 'Akun karyawan baru berhasil dibuat!');
+    }
+
+    /**
+     * Update employee credentials.
+     */
+    public function updateEmployee(Request $request, $id)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $employee = User::findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $employee->id,
+            'password' => 'nullable|string|min:8',
+        ]);
+
+        $employee->name = $request->name;
+        $employee->email = $request->email;
+        if ($request->filled('password')) {
+            $employee->password = Hash::make($request->password);
+        }
+        $employee->save();
+
+        return back()->with('success', 'Data karyawan berhasil diperbarui!');
+    }
+
+    /**
+     * Safely delete employee and their logs.
+     */
+    public function destroyEmployee($id)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $employee = User::findOrFail($id);
+        
+        // Remove linked attendances
+        Attendance::where('user_id', $employee->id)->delete();
+        $employee->delete();
+
+        return back()->with('success', 'Akun karyawan beserta seluruh riwayat absensinya telah dihapus permanen.');
+    }
+
+    /**
+     * Correct an attendance log.
+     */
+    public function updateAttendance(Request $request, $id)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $attendance = Attendance::findOrFail($id);
+
+        $request->validate([
+            'status' => 'required|in:present,sick,leave',
+            'work_mode' => 'nullable|in:wfo,wfh',
+            'minutes_late' => 'required|integer|min:0',
+            'notes' => 'nullable|string|max:255',
+        ]);
+
+        $attendance->status = $request->status;
+        $attendance->work_mode = $request->status === 'present' ? $request->work_mode : null;
+        $attendance->minutes_late = $request->status === 'present' ? $request->minutes_late : 0;
+        $attendance->notes = $request->notes;
+        $attendance->save();
+
+        return back()->with('success', 'Catatan absensi karyawan berhasil diperbarui!');
+    }
+
+    /**
+     * Remove an attendance record.
+     */
+    public function destroyAttendance($id)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $attendance = Attendance::findOrFail($id);
+        $attendance->delete();
+
+        return back()->with('success', 'Catatan absensi berhasil dihapus!');
     }
 }

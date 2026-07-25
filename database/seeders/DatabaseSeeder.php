@@ -14,19 +14,29 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Admin Account
-        User::factory()->create([
-            'name' => 'Administrator',
-            'email' => 'admin@gmail.com',
-            'password' => Hash::make('123456789'),
-            'role' => 'admin',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'admin@gmail.com'],
+            [
+                'name' => 'Administrator',
+                'password' => Hash::make('123456789'),
+                'role' => 'admin',
+            ]
+        );
 
         // Regular Employee Account
-        User::factory()->create([
-            'name' => 'Regular Employee',
-            'email' => 'user@gmail.com',
-            'password' => Hash::make('123456789'),
-            'role' => 'employee',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'user@gmail.com'],
+            [
+                'name' => 'Regular Employee',
+                'password' => Hash::make('123456789'),
+                'role' => 'employee',
+            ]
+        );
+
+        // Default Office settings
+        \App\Models\Setting::set('office_latitude', '-6.873218738309585');
+        \App\Models\Setting::set('office_longitude', '107.5609385222725');
+        \App\Models\Setting::set('office_radius_meters', '100');
+        \App\Models\Setting::set('office_check_in_time', '08:00:00');
     }
 }
