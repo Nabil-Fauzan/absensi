@@ -4,6 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>AbsenKita - Sistem Absensi Karyawan Online</title>
+        <link rel="icon" type="image/png" href="{{ asset('images/absenkita-logo.png') }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,11 +25,7 @@
         <!-- Header / Navigation -->
         <header class="w-full max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <div class="p-2.5 bg-emerald-600 rounded-xl text-white shadow-md shadow-emerald-500/20">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                    </svg>
-                </div>
+                <img src="{{ asset('images/absenkita-logo.png') }}" alt="AbsenKita Logo" class="h-9 w-auto">
                 <span class="text-xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400">AbsenKita</span>
             </div>
 
