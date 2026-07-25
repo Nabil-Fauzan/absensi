@@ -94,7 +94,11 @@ APP_TIMEZONE=Asia/Jakarta
    * **Email**: `admin@gmail.com`
    * **Password**: `123456789`
 
-6. **Jalankan Aplikasi**:
+6. **Kredensial Default Akun User**:
+   * **Email**: `user@gmail.com`
+   * **Password**: `123456789`
+
+7. **Jalankan Aplikasi**:
    Jalankan server pengembangan Laravel dan bundler aset Tailwind:
    ```bash
    php artisan serve
