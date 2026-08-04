@@ -164,10 +164,22 @@
                         <td class="p-4 text-xs text-gray-500 dark:text-gray-400 italic max-w-xs truncate">{{ $att->notes ?? '-' }}</td>
                         <td class="p-4 text-right">
                             <div class="flex justify-end gap-1.5">
-                                <button type="button" onclick="openEditAttendanceModal({{ $att->id }}, '{{ $att->status }}', '{{ $att->work_mode }}', {{ $att->minutes_late }}, '{{ addslashes($att->notes) }}')" class="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 hover:bg-blue-100 rounded-lg text-xs font-bold border border-blue-100 dark:border-blue-900/60 active:scale-95 transition">
+                                <button type="button" 
+                                        data-id="{{ $att->id }}"
+                                        data-status="{{ $att->status }}"
+                                        data-work-mode="{{ $att->work_mode }}"
+                                        data-minutes-late="{{ $att->minutes_late }}"
+                                        data-notes="{{ $att->notes }}"
+                                        onclick="openEditAttendanceModal(this)" 
+                                        class="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 hover:bg-blue-100 rounded-lg text-xs font-bold border border-blue-100 dark:border-blue-900/60 active:scale-95 transition">
                                     <i class="bi bi-pencil mr-1"></i> Edit
                                 </button>
-                                <button type="button" onclick="event.preventDefault(); event.stopPropagation(); showConfirmModal('delete-attendance-form-{{ $att->id }}', 'Hapus Log Kehadiran', 'Apakah Anda yakin ingin menghapus log absensi ini?')" class="px-2.5 py-1.5 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-455 hover:bg-rose-100 rounded-lg text-xs font-bold border border-rose-100 dark:border-rose-900/60 active:scale-95 transition">
+                                <button type="button" 
+                                        data-form-id="delete-attendance-form-{{ $att->id }}"
+                                        data-title="Hapus Log Kehadiran"
+                                        data-message="Apakah Anda yakin ingin menghapus log absensi ini?"
+                                        onclick="event.preventDefault(); event.stopPropagation(); showConfirmModal(this)" 
+                                        class="px-2.5 py-1.5 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-455 hover:bg-rose-100 rounded-lg text-xs font-bold border border-rose-100 dark:border-rose-900/60 active:scale-95 transition">
                                     <i class="bi bi-trash mr-1"></i> Hapus
                                 </button>
                                 <form id="delete-attendance-form-{{ $att->id }}" action="{{ route('admin.attendance.destroy', $att->id) }}" method="POST" class="hidden">

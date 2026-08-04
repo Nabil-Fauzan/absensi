@@ -49,8 +49,8 @@
             const radiusInput = document.getElementById('office_radius');
             if (!latInput || !lngInput || !radiusInput) return;
 
-            let lat = parseFloat(latInput.value) || -6.873218738309585;
-            let lng = parseFloat(lngInput.value) || 107.5609385222725;
+            let lat = parseFloat(latInput.value) || {{ env('OFFICE_LATITUDE', -6.873218738309585) }};
+            let lng = parseFloat(lngInput.value) || {{ env('OFFICE_LONGITUDE', 107.5609385222725) }};
             let radius = parseInt(radiusInput.value) || 100;
 
             setTimeout(() => {

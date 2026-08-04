@@ -30,29 +30,6 @@
     @include('admin.partials.modals')
 
     <script>
-        // --- CUSTOM CONFIRMATION MODAL HELPER FUNCTIONS ---
-        let activeConfirmFormId = null;
-
-        function showConfirmModal(formId, title, message) {
-            activeConfirmFormId = formId;
-            document.getElementById('confirmTitle').innerText = title;
-            document.getElementById('confirmMessage').innerText = message;
-            
-            const submitBtn = document.getElementById('confirmSubmitBtn');
-            submitBtn.onclick = function(e) {
-                e.preventDefault();
-                const form = document.getElementById(activeConfirmFormId);
-                if (form) form.submit();
-            };
-            
-            document.getElementById('confirmModal').classList.remove('hidden');
-        }
-
-        function closeConfirmModal() {
-            document.getElementById('confirmModal').classList.add('hidden');
-            activeConfirmFormId = null;
-        }
-
         // --- EMPLOYEE MODAL CRUD ---
         function openAddEmployeeModal() {
             document.getElementById('addEmployeeModal').classList.remove('hidden');
@@ -61,7 +38,11 @@
             document.getElementById('addEmployeeModal').classList.add('hidden');
         }
         
-        function openEditEmployeeModal(id, name, email) {
+        function openEditEmployeeModal(button) {
+            const id = button.dataset.id;
+            const name = button.dataset.name;
+            const email = button.dataset.email;
+
             document.getElementById('editEmpName').value = name;
             document.getElementById('editEmpEmail').value = email;
             document.getElementById('editEmployeeForm').action = `/admin/employees/${id}`;

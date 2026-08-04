@@ -23,15 +23,17 @@ class AttendanceController extends Controller
         $userId = Auth::id();
         $today = Carbon::today()->toDateString();
 
-        // Check if there is an active check-in (present and no check_out)
-        $active = Attendance::where('user_id', $userId)
+        // Prevent check-in if there is already an active or completed present attendance today
+        $existingPresent = Attendance::where('user_id', $userId)
             ->where('date', $today)
             ->where('status', 'present')
-            ->whereNull('check_out')
             ->first();
 
-        if ($active) {
-            return redirect()->back()->with('error', 'Anda sudah melakukan absen masuk dan belum absen keluar.');
+        if ($existingPresent) {
+            if ($existingPresent->check_out) {
+                return redirect()->back()->with('error', 'Anda sudah melakukan absen masuk dan keluar hari ini.');
+            }
+            return redirect()->back()->with('error', 'Anda sudah melakukan absen masuk hari ini.');
         }
 
         // Check if already submitted sick/leave today
@@ -76,35 +78,17 @@ class AttendanceController extends Controller
             $minutesLate = $now->diffInMinutes($limitTime);
         }
 
-        // If a present record already exists for today, we update it instead of creating a new one (due to DB unique constraint)
-        $existingPresent = Attendance::where('user_id', $userId)
-            ->where('date', $today)
-            ->where('status', 'present')
-            ->first();
-
-        if ($existingPresent) {
-            $existingPresent->update([
-                'check_in' => $now->toTimeString(),
-                'check_out' => null,
-                'latitude_in' => $request->latitude,
-                'longitude_in' => $request->longitude,
-                'latitude_out' => null,
-                'longitude_out' => null,
-                'work_mode' => $workMode,
-                'minutes_late' => $minutesLate,
-            ]);
-        } else {
-            Attendance::create([
-                'user_id' => $userId,
-                'date' => $today,
-                'check_in' => $now->toTimeString(),
-                'status' => 'present',
-                'latitude_in' => $request->latitude,
-                'longitude_in' => $request->longitude,
-                'work_mode' => $workMode,
-                'minutes_late' => $minutesLate,
-            ]);
-        }
+        // Create new attendance
+        Attendance::create([
+            'user_id' => $userId,
+            'date' => $today,
+            'check_in' => $now->toTimeString(),
+            'status' => 'present',
+            'latitude_in' => $request->latitude,
+            'longitude_in' => $request->longitude,
+            'work_mode' => $workMode,
+            'minutes_late' => $minutesLate,
+        ]);
 
         return redirect()->back()->with('success', 'Absen masuk berhasil dicatat!');
     }
@@ -125,11 +109,7 @@ class AttendanceController extends Controller
             ->first();
 
         if (!$attendance) {
-            return redirect()->back()->with('error', 'Data absensi masuk hari ini tidak ditemukan.');
-        }
-
-        if ($attendance->check_out) {
-            return redirect()->back()->with('error', 'Anda sudah melakukan absen keluar hari ini.');
+            return redirect()->back()->with('error', 'Data absensi masuk hari ini tidak ditemukan atau Anda sudah melakukan absen keluar.');
         }
 
         $attendance->update([
@@ -247,30 +227,7 @@ class AttendanceController extends Controller
 
         $today = Carbon::today()->toDateString();
         $query = Attendance::with('user');
-
-        if ($request->search) {
-            $query->whereHas('user', function($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%');
-            });
-        }
-
-        if ($request->start_date) {
-            $query->where('date', '>=', $request->start_date);
-        }
-
-        if ($request->end_date) {
-            $query->where('date', '<=', $request->end_date);
-        }
-
-        if ($request->status) {
-            if ($request->status === 'present') {
-                $query->where('status', 'present');
-            } elseif ($request->status === 'izin_sakit') {
-                $query->whereIn('status', ['sick', 'leave']);
-            } elseif ($request->status === 'terlambat') {
-                $query->where('status', 'present')->where('minutes_late', '>', 0);
-            }
-        }
+        $query = $this->applyAttendanceFilters($query, $request);
 
         $attendances = $query->orderBy('date', 'desc')
             ->orderBy('created_at', 'desc')
@@ -292,10 +249,11 @@ class AttendanceController extends Controller
             
         $employeeUserIds = User::where('role', 'employee')->pluck('id');
         $absentTodayUserIds = Attendance::where('date', $today)->pluck('user_id');
-        $totalBelumAbsen = $employeeUserIds->diff($absentTodayUserIds)->count();
+        $belumAbsenUserIds = $employeeUserIds->diff($absentTodayUserIds);
+        $totalBelumAbsen = $belumAbsenUserIds->count();
 
         // Compile names of employees who haven't checked in
-        $belumAbsenUsers = User::whereIn('id', $employeeUserIds->diff($absentTodayUserIds))
+        $belumAbsenUsers = User::whereIn('id', $belumAbsenUserIds)
             ->orderBy('name', 'asc')
             ->get(['name', 'email']);
 
@@ -308,6 +266,7 @@ class AttendanceController extends Controller
 
         // Calculate weekly attendance data (last 7 days)
         $chartData = [];
+        $employeeCount = User::where('role', 'employee')->count();
         for ($i = 6; $i >= 0; $i--) {
             $d = Carbon::today()->subDays($i);
             $dateString = $d->toDateString();
@@ -321,7 +280,6 @@ class AttendanceController extends Controller
                 ->whereIn('status', ['sick', 'leave'])
                 ->count();
                 
-            $employeeCount = User::where('role', 'employee')->count();
             $belumAbsenCount = max(0, $employeeCount - ($hadirCount + $izinCount));
             
             $chartData[] = [
@@ -399,30 +357,7 @@ class AttendanceController extends Controller
         }
 
         $query = Attendance::with('user');
-
-        if ($request->search) {
-            $query->whereHas('user', function($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%');
-            });
-        }
-
-        if ($request->start_date) {
-            $query->where('date', '>=', $request->start_date);
-        }
-
-        if ($request->end_date) {
-            $query->where('date', '<=', $request->end_date);
-        }
-
-        if ($request->status) {
-            if ($request->status === 'present') {
-                $query->where('status', 'present');
-            } elseif ($request->status === 'izin_sakit') {
-                $query->whereIn('status', ['sick', 'leave']);
-            } elseif ($request->status === 'terlambat') {
-                $query->where('status', 'present')->where('minutes_late', '>', 0);
-            }
-        }
+        $query = $this->applyAttendanceFilters($query, $request);
 
         $attendances = $query->orderBy('date', 'desc')
             ->orderBy('created_at', 'desc')
@@ -597,8 +532,7 @@ class AttendanceController extends Controller
 
         $employee = User::where('role', 'employee')->findOrFail($id);
         
-        // Remove linked attendances
-        Attendance::where('user_id', $employee->id)->delete();
+        // Attendances are automatically deleted via database foreign key cascade constraint
         $employee->delete();
 
         return back()->with('success', 'Akun karyawan beserta seluruh riwayat absensinya telah dihapus permanen.')->with('active_tab', 'employee-tab');
@@ -714,5 +648,37 @@ class AttendanceController extends Controller
 
         $typeLabel = $attendance->status === 'sick' ? 'Sakit' : 'Izin';
         return back()->with('success', "Pengajuan {$typeLabel} dari {$attendance->user->name} berhasil ditolak.");
+    }
+
+    /**
+     * Helper to apply common search and date filters to the attendance query.
+     */
+    private function applyAttendanceFilters(\Illuminate\Database\Eloquent\Builder $query, Request $request): \Illuminate\Database\Eloquent\Builder
+    {
+        if ($request->search) {
+            $query->whereHas('user', function($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        if ($request->start_date) {
+            $query->where('date', '>=', $request->start_date);
+        }
+
+        if ($request->end_date) {
+            $query->where('date', '<=', $request->end_date);
+        }
+
+        if ($request->status) {
+            if ($request->status === 'present') {
+                $query->where('status', 'present');
+            } elseif ($request->status === 'izin_sakit') {
+                $query->whereIn('status', ['sick', 'leave']);
+            } elseif ($request->status === 'terlambat') {
+                $query->where('status', 'present')->where('minutes_late', '>', 0);
+            }
+        }
+
+        return $query;
     }
 }

@@ -27,10 +27,20 @@
                         <td class="p-4 text-xs text-gray-500">{{ $emp->created_at->translatedFormat('d F Y') }}</td>
                         <td class="p-4 text-right">
                             <div class="flex justify-end gap-2">
-                                <button type="button" onclick="openEditEmployeeModal({{ $emp->id }}, '{{ addslashes($emp->name) }}', '{{ $emp->email }}')" class="px-3 py-1.5 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 hover:bg-blue-100 rounded-lg text-xs font-bold transition duration-150 border border-blue-100 dark:border-blue-900/60 active:scale-95">
+                                <button type="button" 
+                                        data-id="{{ $emp->id }}"
+                                        data-name="{{ $emp->name }}"
+                                        data-email="{{ $emp->email }}"
+                                        onclick="openEditEmployeeModal(this)" 
+                                        class="px-3 py-1.5 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 hover:bg-blue-100 rounded-lg text-xs font-bold transition duration-150 border border-blue-100 dark:border-blue-900/60 active:scale-95">
                                     <i class="bi bi-pencil mr-1"></i> Edit
                                 </button>
-                                <button type="button" onclick="event.preventDefault(); event.stopPropagation(); showConfirmModal('delete-employee-form-{{ $emp->id }}', 'Hapus Akun Karyawan', 'Apakah Anda yakin ingin menghapus akun karyawan &quot;{{ addslashes($emp->name) }}&quot; beserta seluruh riwayat absensinya secara permanen?')" class="px-3 py-1.5 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 hover:bg-rose-100 rounded-lg text-xs font-bold transition duration-150 border border-rose-100 dark:border-rose-900/60 active:scale-95">
+                                <button type="button" 
+                                        data-form-id="delete-employee-form-{{ $emp->id }}"
+                                        data-title="Hapus Akun Karyawan"
+                                        data-message="Apakah Anda yakin ingin menghapus akun karyawan &quot;{{ $emp->name }}&quot; beserta seluruh riwayat absensinya secara permanen?"
+                                        onclick="event.preventDefault(); event.stopPropagation(); showConfirmModal(this)" 
+                                        class="px-3 py-1.5 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 hover:bg-rose-100 rounded-lg text-xs font-bold transition duration-150 border border-rose-100 dark:border-rose-900/60 active:scale-95">
                                     <i class="bi bi-trash mr-1"></i> Hapus
                                 </button>
                                 <form id="delete-employee-form-{{ $emp->id }}" action="{{ route('admin.employees.destroy', $emp->id) }}" method="POST" class="hidden">

@@ -148,9 +148,9 @@
                 startInput.value = formatDate(now);
                 endInput.value = formatDate(now);
             } else if (range === 'week') {
-                const firstDay = new Date(now.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1))); // Monday
-                const lastDay = new Date(firstDay);
-                lastDay.setDate(lastDay.getDate() + 6); // Sunday
+                const dayOffset = now.getDay() === 0 ? -6 : 1 - now.getDay();
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset);
+                const lastDay = new Date(firstDay.getFullYear(), firstDay.getMonth(), firstDay.getDate() + 6);
                 
                 startInput.value = formatDate(firstDay);
                 endInput.value = formatDate(lastDay);
@@ -254,31 +254,16 @@
             document.getElementById('rejectModal').classList.add('hidden');
         }
 
-        // --- CUSTOM CONFIRMATION MODAL HELPER FUNCTIONS ---
-        let activeConfirmFormId = null;
 
-        function showConfirmModal(formId, title, message) {
-            activeConfirmFormId = formId;
-            document.getElementById('confirmTitle').innerText = title;
-            document.getElementById('confirmMessage').innerText = message;
-            
-            const submitBtn = document.getElementById('confirmSubmitBtn');
-            submitBtn.onclick = function(e) {
-                e.preventDefault();
-                const form = document.getElementById(activeConfirmFormId);
-                if (form) form.submit();
-            };
-            
-            document.getElementById('confirmModal').classList.remove('hidden');
-        }
-
-        function closeConfirmModal() {
-            document.getElementById('confirmModal').classList.add('hidden');
-            activeConfirmFormId = null;
-        }
 
         // --- ATTENDANCE CORRECTION MODAL ---
-        function openEditAttendanceModal(id, status, workMode, minutesLate, notes) {
+        function openEditAttendanceModal(button) {
+            const id = button.dataset.id;
+            const status = button.dataset.status;
+            const workMode = button.dataset.workMode;
+            const minutesLate = button.dataset.minutesLate;
+            const notes = button.dataset.notes;
+
             document.getElementById('editAttStatus').value = status;
             document.getElementById('editAttWorkMode').value = workMode || 'wfo';
             document.getElementById('editAttMinutesLate').value = minutesLate || 0;

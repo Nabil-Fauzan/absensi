@@ -264,3 +264,38 @@
         </div>
     </div>
 </div>
+
+<script>
+    // --- GLOBAL CUSTOM CONFIRMATION MODAL HELPER FUNCTIONS ---
+    let activeConfirmFormId = null;
+
+    function showConfirmModal(target, title, message) {
+        if (typeof target === 'object' && target !== null && target.dataset) {
+            activeConfirmFormId = target.dataset.formId;
+            document.getElementById('confirmTitle').innerText = target.dataset.title || 'Konfirmasi';
+            document.getElementById('confirmMessage').innerText = target.dataset.message || '';
+        } else {
+            activeConfirmFormId = target;
+            document.getElementById('confirmTitle').innerText = title || 'Konfirmasi';
+            document.getElementById('confirmMessage').innerText = message || '';
+        }
+        
+        const submitBtn = document.getElementById('confirmSubmitBtn');
+        if (submitBtn) {
+            submitBtn.onclick = function(e) {
+                e.preventDefault();
+                const form = document.getElementById(activeConfirmFormId);
+                if (form) form.submit();
+            };
+        }
+        
+        const modal = document.getElementById('confirmModal');
+        if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeConfirmModal() {
+        const modal = document.getElementById('confirmModal');
+        if (modal) modal.classList.add('hidden');
+        activeConfirmFormId = null;
+    }
+</script>

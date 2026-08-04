@@ -111,7 +111,7 @@
             </div>
         </div>
         <div class="footer">
-            Sistem Absensi AbsenKita &copy; 2026
+            Sistem Absensi {{ config('app.name', 'AbsenKita') }} &copy; {{ date('Y') }}
         </div>
     </div>
 </body>

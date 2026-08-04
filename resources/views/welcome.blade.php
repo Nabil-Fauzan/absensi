@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>AbsenKita - Sistem Absensi Karyawan Online</title>
+        <title>{{ config('app.name', 'AbsenKita') }} - Sistem Absensi Karyawan Online</title>
         <link rel="icon" type="image/png" href="{{ asset('images/absenkita-logo.png') }}">
 
         <!-- Fonts -->
@@ -29,7 +29,7 @@
         <header class="w-full max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
             <div class="flex items-center gap-3">
                 <img src="{{ asset('images/absenkita-logo.png') }}" alt="AbsenKita Logo" class="h-9 w-auto">
-                <span class="text-xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400">AbsenKita</span>
+                <span class="text-xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400">{{ config('app.name', 'AbsenKita') }}</span>
             </div>
 
             @if (Route::has('login'))
@@ -177,7 +177,7 @@
         <!-- Footer -->
         <footer class="w-full border-t border-gray-100 dark:border-gray-900 py-8 bg-gray-50 dark:bg-gray-950">
             <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500 dark:text-gray-500">
-                <p>&copy; 2026 AbsenKita. Hak Cipta Dilindungi.</p>
+                <p>&copy; {{ date('Y') }} {{ config('app.name', 'AbsenKita') }}. Hak Cipta Dilindungi.</p>
                 <div class="flex gap-4">
                     <a href="https://github.com/Nabil-Fauzan/absensi" target="_blank" class="hover:text-emerald-600 transition-colors">GitHub Repository</a>
                 </div>

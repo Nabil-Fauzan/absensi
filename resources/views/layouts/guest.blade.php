@@ -37,7 +37,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
                 </div>
-                <span class="text-xl font-extrabold tracking-tight text-white">AbsenKita</span>
+                <span class="text-xl font-extrabold tracking-tight text-white">{{ config('app.name', 'AbsenKita') }}</span>
             </div>
 
             <div class="space-y-6 z-10 max-w-md">
@@ -48,7 +48,7 @@
             </div>
 
             <div class="text-xs text-emerald-300 z-10 opacity-75">
-                &copy; 2026 AbsenKita. Hak Cipta Dilindungi.
+                &copy; {{ date('Y') }} {{ config('app.name', 'AbsenKita') }}. Hak Cipta Dilindungi.
             </div>
         </div>
 
@@ -61,7 +61,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
                 </div>
-                <span class="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">AbsenKita</span>
+                <span class="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">{{ config('app.name', 'AbsenKita') }}</span>
             </div>
 
             <div class="w-full sm:max-w-md bg-white dark:bg-gray-900 p-8 md:p-10 rounded-[2rem] shadow-2xl border border-gray-100 dark:border-gray-800 transition-colors relative pt-16">
