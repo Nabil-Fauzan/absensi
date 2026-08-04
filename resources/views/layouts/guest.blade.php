@@ -16,6 +16,9 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         
+        <!-- Bootstrap Icons -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        
         <style>
             body {
                 font-family: 'Plus Jakarta Sans', sans-serif;
@@ -44,7 +47,7 @@
                 </p>
             </div>
 
-            <div class="text-xs text-emerald-250 z-10 opacity-75">
+            <div class="text-xs text-emerald-300 z-10 opacity-75">
                 &copy; 2026 AbsenKita. Hak Cipta Dilindungi.
             </div>
         </div>

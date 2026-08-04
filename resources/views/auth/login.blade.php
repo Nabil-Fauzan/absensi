@@ -19,10 +19,15 @@
         <div class="mt-4">
             <x-input-label for="password" :value="__('Password')" />
 
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
+            <div class="relative mt-1">
+                <x-text-input id="password" class="block w-full pr-10"
+                                type="password"
+                                name="password"
+                                required autocomplete="current-password" />
+                <button type="button" onclick="togglePasswordVisibility('password', 'togglePasswordIcon')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-450 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors duration-150">
+                    <i id="togglePasswordIcon" class="bi bi-eye"></i>
+                </button>
+            </div>
 
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
@@ -47,4 +52,22 @@
             </x-primary-button>
         </div>
     </form>
+
+    <script>
+        function togglePasswordVisibility(fieldId, iconId) {
+            const field = document.getElementById(fieldId);
+            const icon = document.getElementById(iconId);
+            if (field && icon) {
+                if (field.type === 'password') {
+                    field.type = 'text';
+                    icon.classList.remove('bi-eye');
+                    icon.classList.add('bi-eye-slash');
+                } else {
+                    field.type = 'password';
+                    icon.classList.remove('bi-eye-slash');
+                    icon.classList.add('bi-eye');
+                }
+            }
+        }
+    </script>
 </x-guest-layout>

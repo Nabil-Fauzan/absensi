@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'date', 'check_in', 'check_out', 'status', 'notes', 'latitude_in', 'longitude_in', 'latitude_out', 'longitude_out', 'work_mode', 'minutes_late'])]
+#[Fillable(['user_id', 'date', 'check_in', 'check_out', 'status', 'notes', 'latitude_in', 'longitude_in', 'latitude_out', 'longitude_out', 'work_mode', 'minutes_late', 'approval_status', 'rejection_reason'])]
 class Attendance extends Model
 {
     /**

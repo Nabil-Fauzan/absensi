@@ -5,8 +5,8 @@
             <h3 class="text-lg font-bold text-gray-900 dark:text-white">Daftar Akun Karyawan</h3>
             <p class="text-xs text-gray-400 mt-0.5">Kelola data profil, email, dan kata sandi akses karyawan</p>
         </div>
-        <button type="button" onclick="openAddEmployeeModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition duration-150 active:scale-95 shadow-md flex items-center gap-1">
-            ➕ Tambah Karyawan Baru
+        <button type="button" onclick="openAddEmployeeModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition duration-150 active:scale-95 shadow-md flex items-center gap-1.5">
+            <i class="bi bi-person-plus-fill"></i> Tambah Karyawan Baru
         </button>
     </div>
     <div class="overflow-x-auto">
@@ -24,18 +24,18 @@
                     <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition duration-150">
                         <td class="p-4 font-semibold text-gray-900 dark:text-white">{{ $emp->name }}</td>
                         <td class="p-4 font-mono text-xs text-gray-500">{{ $emp->email }}</td>
-                        <td class="p-4 text-xs text-gray-450">{{ $emp->created_at->translatedFormat('d F Y') }}</td>
+                        <td class="p-4 text-xs text-gray-500">{{ $emp->created_at->translatedFormat('d F Y') }}</td>
                         <td class="p-4 text-right">
                             <div class="flex justify-end gap-2">
                                 <button type="button" onclick="openEditEmployeeModal({{ $emp->id }}, '{{ addslashes($emp->name) }}', '{{ $emp->email }}')" class="px-3 py-1.5 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 hover:bg-blue-100 rounded-lg text-xs font-bold transition duration-150 border border-blue-100 dark:border-blue-900/60 active:scale-95">
-                                    ✏️ Edit
+                                    <i class="bi bi-pencil mr-1"></i> Edit
                                 </button>
-                                <form action="{{ route('admin.employees.destroy', $emp->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus akun karyawan ini beserta seluruh riwayat absensinya secara permanen?')" class="inline">
+                                <button type="button" onclick="event.preventDefault(); event.stopPropagation(); showConfirmModal('delete-employee-form-{{ $emp->id }}', 'Hapus Akun Karyawan', 'Apakah Anda yakin ingin menghapus akun karyawan &quot;{{ addslashes($emp->name) }}&quot; beserta seluruh riwayat absensinya secara permanen?')" class="px-3 py-1.5 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 hover:bg-rose-100 rounded-lg text-xs font-bold transition duration-150 border border-rose-100 dark:border-rose-900/60 active:scale-95">
+                                    <i class="bi bi-trash mr-1"></i> Hapus
+                                </button>
+                                <form id="delete-employee-form-{{ $emp->id }}" action="{{ route('admin.employees.destroy', $emp->id) }}" method="POST" class="hidden">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="px-3 py-1.5 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-455 hover:bg-rose-100 rounded-lg text-xs font-bold transition duration-150 border border-rose-100 dark:border-rose-900/60 active:scale-95">
-                                        🗑️ Hapus
-                                    </button>
                                 </form>
                             </div>
                         </td>

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Attendance;
 use App\Models\User;
 use App\Mail\LeaveRequestedMail;
+use App\Mail\LeaveStatusUpdatedMail;
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
@@ -166,11 +167,13 @@ class AttendanceController extends Controller
             'date' => $today,
             'status' => $request->status,
             'notes' => $request->notes,
+            'approval_status' => 'pending',
         ]);
 
         // Send email notification to Admin
         try {
-            Mail::to('admin@absenkita.com')->send(new LeaveRequestedMail($attendance));
+            $adminEmail = User::where('role', 'admin')->value('email') ?? 'admin@absenkita.com';
+            Mail::to($adminEmail)->send(new LeaveRequestedMail($attendance));
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("Failed to send email notification: " . $e->getMessage());
         }
@@ -189,109 +192,7 @@ class AttendanceController extends Controller
         $today = Carbon::today()->toDateString();
 
         if ($user instanceof \App\Models\User && $user->isAdmin()) {
-            // Admin sees all records with search & date filters
-            $query = Attendance::with('user');
-
-            if ($request->search) {
-                $query->whereHas('user', function($q) use ($request) {
-                    $q->where('name', 'like', '%' . $request->search . '%');
-                });
-            }
-
-            if ($request->start_date) {
-                $query->where('date', '>=', $request->start_date);
-            }
-
-            if ($request->end_date) {
-                $query->where('date', '<=', $request->end_date);
-            }
-
-            if ($request->status) {
-                if ($request->status === 'present') {
-                    $query->where('status', 'present');
-                } elseif ($request->status === 'izin_sakit') {
-                    $query->whereIn('status', ['sick', 'leave']);
-                } elseif ($request->status === 'terlambat') {
-                    $query->where('status', 'present')->where('minutes_late', '>', 0);
-                }
-            }
-
-            $attendances = $query->orderBy('date', 'desc')
-                ->orderBy('created_at', 'desc')
-                ->get();
-
-            // Calculate daily stats for today
-            $totalHadir = Attendance::where('date', $today)
-                ->where('status', 'present')
-                ->count();
-                
-            $totalIzinSakit = Attendance::where('date', $today)
-                ->whereIn('status', ['leave', 'sick'])
-                ->count();
-                
-            $totalTerlambat = Attendance::where('date', $today)
-                ->where('status', 'present')
-                ->where('minutes_late', '>', 0)
-                ->count();
-                
-            $employeeUserIds = User::where('role', 'employee')->pluck('id');
-            $absentTodayUserIds = Attendance::where('date', $today)->pluck('user_id');
-            $totalBelumAbsen = $employeeUserIds->diff($absentTodayUserIds)->count();
-
-            // Compile names of employees who haven't checked in
-            $belumAbsenUsers = User::whereIn('id', $employeeUserIds->diff($absentTodayUserIds))
-                ->orderBy('name', 'asc')
-                ->get(['name', 'email']);
-
-            $stats = [
-                'hadir' => $totalHadir,
-                'izin_sakit' => $totalIzinSakit,
-                'terlambat' => $totalTerlambat,
-                'belum_absen' => $totalBelumAbsen,
-            ];
-
-            $officeLat = \App\Models\Setting::get('office_latitude', env('OFFICE_LATITUDE', -6.873218738309585));
-            $officeLon = \App\Models\Setting::get('office_longitude', env('OFFICE_LONGITUDE', 107.5609385222725));
-            $officeRadius = \App\Models\Setting::get('office_radius_meters', env('OFFICE_RADIUS_METERS', 100));
-            $checkInTimeLimit = \App\Models\Setting::get('office_check_in_time', env('OFFICE_CHECK_IN_TIME', '08:00:00'));
- 
-            $officeConfig = [
-                'latitude' => $officeLat,
-                'longitude' => $officeLon,
-                'radius' => $officeRadius,
-                'check_in_limit' => $checkInTimeLimit,
-            ];
- 
-            // Calculate weekly attendance data (last 7 days)
-            $chartData = [];
-            for ($i = 6; $i >= 0; $i--) {
-                $d = Carbon::today()->subDays($i);
-                $dateString = $d->toDateString();
-                $dayName = $d->translatedFormat('D'); // Sen, Sel, Rab, etc.
-                
-                $hadirCount = Attendance::where('date', $dateString)
-                    ->where('status', 'present')
-                    ->count();
-                    
-                $izinCount = Attendance::where('date', $dateString)
-                    ->whereIn('status', ['sick', 'leave'])
-                    ->count();
-                    
-                $employeeCount = User::where('role', 'employee')->count();
-                $belumAbsenCount = max(0, $employeeCount - ($hadirCount + $izinCount));
-                
-                $chartData[] = [
-                    'label' => $dayName,
-                    'hadir' => $hadirCount,
-                    'izin' => $izinCount,
-                    'belum_absen' => $belumAbsenCount
-                ];
-            }
-
-            // Load all registered employees for CRUD administration
-            $employees = User::where('role', 'employee')->orderBy('name', 'asc')->get();
- 
-            return view('dashboard', compact('attendances', 'stats', 'officeConfig', 'belumAbsenUsers', 'chartData', 'employees'));
+            return redirect()->route('admin.attendance');
         }
 
         // Find if there is an open check-in today (present and no check_out)
@@ -313,7 +214,178 @@ class AttendanceController extends Controller
             ->orderBy('date', 'desc')
             ->get();
 
-        return view('dashboard', compact('todayAttendance', 'attendances'));
+        // Calculate Monthly Statistics for Employee
+        $startOfMonth = Carbon::now()->startOfMonth()->toDateString();
+        $endOfMonth = Carbon::now()->endOfMonth()->toDateString();
+        
+        $monthlyAttendance = Attendance::where('user_id', $user->id)
+            ->whereBetween('date', [$startOfMonth, $endOfMonth])
+            ->get();
+            
+        $monthlyStats = [
+            'present' => $monthlyAttendance->where('status', 'present')->count(),
+            'sick' => $monthlyAttendance->where('status', 'sick')->count(),
+            'leave' => $monthlyAttendance->where('status', 'leave')->count(),
+            'late_minutes' => $monthlyAttendance->where('status', 'present')->sum('minutes_late'),
+        ];
+        
+        $totalDays = $monthlyStats['present'] + $monthlyStats['sick'] + $monthlyStats['leave'];
+        $monthlyStats['attendance_rate'] = $totalDays > 0 ? round(($monthlyStats['present'] / $totalDays) * 100) : 0;
+
+        return view('dashboard', compact('todayAttendance', 'attendances', 'monthlyStats'));
+    }
+
+    /**
+     * Show admin attendance logs page.
+     */
+    public function adminAttendance(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $today = Carbon::today()->toDateString();
+        $query = Attendance::with('user');
+
+        if ($request->search) {
+            $query->whereHas('user', function($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        if ($request->start_date) {
+            $query->where('date', '>=', $request->start_date);
+        }
+
+        if ($request->end_date) {
+            $query->where('date', '<=', $request->end_date);
+        }
+
+        if ($request->status) {
+            if ($request->status === 'present') {
+                $query->where('status', 'present');
+            } elseif ($request->status === 'izin_sakit') {
+                $query->whereIn('status', ['sick', 'leave']);
+            } elseif ($request->status === 'terlambat') {
+                $query->where('status', 'present')->where('minutes_late', '>', 0);
+            }
+        }
+
+        $attendances = $query->orderBy('date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Calculate daily stats for today
+        $totalHadir = Attendance::where('date', $today)
+            ->where('status', 'present')
+            ->count();
+            
+        $totalIzinSakit = Attendance::where('date', $today)
+            ->whereIn('status', ['leave', 'sick'])
+            ->count();
+            
+        $totalTerlambat = Attendance::where('date', $today)
+            ->where('status', 'present')
+            ->where('minutes_late', '>', 0)
+            ->count();
+            
+        $employeeUserIds = User::where('role', 'employee')->pluck('id');
+        $absentTodayUserIds = Attendance::where('date', $today)->pluck('user_id');
+        $totalBelumAbsen = $employeeUserIds->diff($absentTodayUserIds)->count();
+
+        // Compile names of employees who haven't checked in
+        $belumAbsenUsers = User::whereIn('id', $employeeUserIds->diff($absentTodayUserIds))
+            ->orderBy('name', 'asc')
+            ->get(['name', 'email']);
+
+        $stats = [
+            'hadir' => $totalHadir,
+            'izin_sakit' => $totalIzinSakit,
+            'terlambat' => $totalTerlambat,
+            'belum_absen' => $totalBelumAbsen,
+        ];
+
+        // Calculate weekly attendance data (last 7 days)
+        $chartData = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $d = Carbon::today()->subDays($i);
+            $dateString = $d->toDateString();
+            $dayName = $d->translatedFormat('D'); // Sen, Sel, Rab, etc.
+            
+            $hadirCount = Attendance::where('date', $dateString)
+                ->where('status', 'present')
+                ->count();
+                
+            $izinCount = Attendance::where('date', $dateString)
+                ->whereIn('status', ['sick', 'leave'])
+                ->count();
+                
+            $employeeCount = User::where('role', 'employee')->count();
+            $belumAbsenCount = max(0, $employeeCount - ($hadirCount + $izinCount));
+            
+            $chartData[] = [
+                'label' => $dayName,
+                'hadir' => $hadirCount,
+                'izin' => $izinCount,
+                'belum_absen' => $belumAbsenCount
+            ];
+        }
+
+        // Office config parameter to display status details
+        $officeLat = \App\Models\Setting::get('office_latitude', env('OFFICE_LATITUDE', -6.873218738309585));
+        $officeLon = \App\Models\Setting::get('office_longitude', env('OFFICE_LONGITUDE', 107.5609385222725));
+        $officeRadius = \App\Models\Setting::get('office_radius_meters', env('OFFICE_RADIUS_METERS', 100));
+        $checkInTimeLimit = \App\Models\Setting::get('office_check_in_time', env('OFFICE_CHECK_IN_TIME', '08:00:00'));
+
+        $officeConfig = [
+            'latitude' => $officeLat,
+            'longitude' => $officeLon,
+            'radius' => $officeRadius,
+            'check_in_limit' => $checkInTimeLimit,
+        ];
+
+        return view('admin.attendance', compact('attendances', 'stats', 'belumAbsenUsers', 'chartData', 'officeConfig'));
+    }
+
+    /**
+     * Show admin employees list page.
+     */
+    public function adminEmployees(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $employees = User::where('role', 'employee')->orderBy('name', 'asc')->get();
+
+        return view('admin.employees', compact('employees'));
+    }
+
+    /**
+     * Show admin geofencing settings page.
+     */
+    public function adminSettings(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $officeLat = \App\Models\Setting::get('office_latitude', env('OFFICE_LATITUDE', -6.873218738309585));
+        $officeLon = \App\Models\Setting::get('office_longitude', env('OFFICE_LONGITUDE', 107.5609385222725));
+        $officeRadius = \App\Models\Setting::get('office_radius_meters', env('OFFICE_RADIUS_METERS', 100));
+        $checkInTimeLimit = \App\Models\Setting::get('office_check_in_time', env('OFFICE_CHECK_IN_TIME', '08:00:00'));
+
+        $officeConfig = [
+            'latitude' => $officeLat,
+            'longitude' => $officeLon,
+            'radius' => $officeRadius,
+            'check_in_limit' => $checkInTimeLimit,
+        ];
+
+        return view('admin.settings', compact('officeConfig'));
     }
 
     /**
@@ -456,7 +528,7 @@ class AttendanceController extends Controller
         \App\Models\Setting::set('office_radius_meters', $request->office_radius_meters);
         \App\Models\Setting::set('office_check_in_time', $request->office_check_in_time);
 
-        return back()->with('success', 'Pengaturan geofencing dan jam kantor berhasil diperbarui!');
+        return back()->with('success', 'Pengaturan geofencing dan jam kantor berhasil diperbarui!')->with('active_tab', 'settings-tab');
     }
 
     /**
@@ -482,20 +554,20 @@ class AttendanceController extends Controller
             'role' => 'employee',
         ]);
 
-        return back()->with('success', 'Akun karyawan baru berhasil dibuat!');
+        return back()->with('success', 'Akun karyawan baru berhasil dibuat!')->with('active_tab', 'employee-tab');
     }
 
     /**
      * Update employee credentials.
      */
-    public function updateEmployee(Request $request, $id)
+    public function updateEmployee(Request $request, int $id)
     {
         $user = Auth::user();
         if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
             abort(403);
         }
 
-        $employee = User::findOrFail($id);
+        $employee = User::where('role', 'employee')->findOrFail($id);
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -510,32 +582,32 @@ class AttendanceController extends Controller
         }
         $employee->save();
 
-        return back()->with('success', 'Data karyawan berhasil diperbarui!');
+        return back()->with('success', 'Data karyawan berhasil diperbarui!')->with('active_tab', 'employee-tab');
     }
 
     /**
      * Safely delete employee and their logs.
      */
-    public function destroyEmployee($id)
+    public function destroyEmployee(int $id)
     {
         $user = Auth::user();
         if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
             abort(403);
         }
 
-        $employee = User::findOrFail($id);
+        $employee = User::where('role', 'employee')->findOrFail($id);
         
         // Remove linked attendances
         Attendance::where('user_id', $employee->id)->delete();
         $employee->delete();
 
-        return back()->with('success', 'Akun karyawan beserta seluruh riwayat absensinya telah dihapus permanen.');
+        return back()->with('success', 'Akun karyawan beserta seluruh riwayat absensinya telah dihapus permanen.')->with('active_tab', 'employee-tab');
     }
 
     /**
      * Correct an attendance log.
      */
-    public function updateAttendance(Request $request, $id)
+    public function updateAttendance(Request $request, int $id)
     {
         $user = Auth::user();
         if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
@@ -563,7 +635,7 @@ class AttendanceController extends Controller
     /**
      * Remove an attendance record.
      */
-    public function destroyAttendance($id)
+    public function destroyAttendance(int $id)
     {
         $user = Auth::user();
         if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
@@ -574,5 +646,73 @@ class AttendanceController extends Controller
         $attendance->delete();
 
         return back()->with('success', 'Catatan absensi berhasil dihapus!');
+    }
+
+    /**
+     * Approve a pending leave or sick request.
+     */
+    public function approveLeave(int $id)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $attendance = Attendance::findOrFail($id);
+        
+        if (!in_array($attendance->status, ['sick', 'leave'])) {
+            return back()->with('error', 'Hanya pengajuan izin/sakit yang membutuhkan persetujuan.');
+        }
+
+        $attendance->update([
+            'approval_status' => 'approved',
+            'rejection_reason' => null
+        ]);
+
+        // Send email notification to employee
+        try {
+            Mail::to($attendance->user->email)->send(new LeaveStatusUpdatedMail($attendance));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to send leave status email: " . $e->getMessage());
+        }
+
+        $typeLabel = $attendance->status === 'sick' ? 'Sakit' : 'Izin';
+        return back()->with('success', "Pengajuan {$typeLabel} dari {$attendance->user->name} berhasil disetujui!");
+    }
+
+    /**
+     * Reject a pending leave or sick request.
+     */
+    public function rejectLeave(Request $request, int $id)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'rejection_reason' => 'required|string|max:255',
+        ]);
+
+        $attendance = Attendance::findOrFail($id);
+
+        if (!in_array($attendance->status, ['sick', 'leave'])) {
+            return back()->with('error', 'Hanya pengajuan izin/sakit yang membutuhkan persetujuan.');
+        }
+
+        $attendance->update([
+            'approval_status' => 'rejected',
+            'rejection_reason' => $request->rejection_reason
+        ]);
+
+        // Send email notification to employee
+        try {
+            Mail::to($attendance->user->email)->send(new LeaveStatusUpdatedMail($attendance));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to send leave status email: " . $e->getMessage());
+        }
+
+        $typeLabel = $attendance->status === 'sick' ? 'Sakit' : 'Izin';
+        return back()->with('success', "Pengajuan {$typeLabel} dari {$attendance->user->name} berhasil ditolak.");
     }
 }

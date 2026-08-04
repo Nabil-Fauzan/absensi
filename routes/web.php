@@ -21,6 +21,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/attendance/leave', [AttendanceController::class, 'leave'])->name('attendance.leave');
     Route::get('/admin/attendance/export', [AttendanceController::class, 'export'])->name('attendance.export');
 
+    // Admin Pages Routes
+    Route::get('/admin/attendance', [AttendanceController::class, 'adminAttendance'])->name('admin.attendance');
+    Route::get('/admin/employees', [AttendanceController::class, 'adminEmployees'])->name('admin.employees');
+    Route::get('/admin/settings', [AttendanceController::class, 'adminSettings'])->name('admin.settings');
+
     // Admin QoL feature routes
     Route::post('/admin/settings', [AttendanceController::class, 'updateSettings'])->name('admin.settings.update');
     Route::post('/admin/employees', [AttendanceController::class, 'storeEmployee'])->name('admin.employees.store');
@@ -28,6 +33,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/admin/employees/{user}', [AttendanceController::class, 'destroyEmployee'])->name('admin.employees.destroy');
     Route::patch('/admin/attendance/{attendance}', [AttendanceController::class, 'updateAttendance'])->name('admin.attendance.update');
     Route::delete('/admin/attendance/{attendance}', [AttendanceController::class, 'destroyAttendance'])->name('admin.attendance.destroy');
+    Route::patch('/admin/attendance/{attendance}/approve', [AttendanceController::class, 'approveLeave'])->name('admin.attendance.approve');
+    Route::patch('/admin/attendance/{attendance}/reject', [AttendanceController::class, 'rejectLeave'])->name('admin.attendance.reject');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

@@ -45,7 +45,7 @@
                         </span>
                         <span class="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500">Hadir Bulan Ini</span>
                     </div>
-                    <div class="w-px h-10 bg-gray-150 dark:bg-gray-750"></div>
+                    <div class="w-px h-10 bg-gray-200 dark:bg-gray-700"></div>
                     <div class="text-center">
                         <span class="block text-2xl font-black text-blue-600 dark:text-blue-400">
                             {{ \App\Models\Attendance::where('user_id', $user->id)->whereIn('status', ['sick', 'leave'])->whereMonth('date', now()->month)->count() }}
@@ -79,7 +79,7 @@
                     <!-- Info Card -->
                     <div class="p-6 bg-white dark:bg-gray-800 shadow-xl rounded-3xl border border-gray-100 dark:border-gray-700 space-y-4">
                         <h4 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            <span>ℹ️ Detail Informasi Akun</span>
+                            <span><i class="bi bi-info-circle-fill text-emerald-600 mr-1"></i> Detail Informasi Akun</span>
                         </h4>
                         <div class="space-y-3 text-xs text-gray-600 dark:text-gray-400">
                             <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
@@ -88,7 +88,7 @@
                             </div>
                             <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
                                 <span class="font-semibold">Status Email</span>
-                                <span class="text-emerald-650 dark:text-emerald-400 font-bold">✔️ Terverifikasi</span>
+                                <span class="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1"><i class="bi bi-check-circle-fill"></i> Terverifikasi</span>
                             </div>
                             <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
                                 <span class="font-semibold">Geofencing Jarak</span>
@@ -98,7 +98,7 @@
                     </div>
 
                     <!-- Danger Zone Card -->
-                    <div class="p-6 bg-rose-50/50 dark:bg-rose-950/10 shadow-xl rounded-3xl border border-rose-150 dark:border-rose-900/60">
+                    <div class="p-6 bg-rose-50/50 dark:bg-rose-950/10 shadow-xl rounded-3xl border border-rose-200 dark:border-rose-900/60">
                         <div class="max-w-xl">
                             @include('profile.partials.delete-user-form')
                         </div>

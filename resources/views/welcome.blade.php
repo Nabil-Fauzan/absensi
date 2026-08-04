@@ -14,6 +14,9 @@
         <!-- Styles / Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         
+        <!-- Bootstrap Icons -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        
         <style>
             body {
                 font-family: 'Plus Jakarta Sans', sans-serif;
@@ -137,8 +140,8 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <!-- Feature 1 -->
                     <div class="p-6 bg-gray-50 dark:bg-gray-950 rounded-2xl border border-gray-100 dark:border-gray-900 hover:border-emerald-500/30 transition-all space-y-4">
-                        <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 rounded-xl flex items-center justify-center text-2xl font-bold">
-                            📍
+                        <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 rounded-xl flex items-center justify-center font-bold">
+                            <i class="bi bi-geo-alt-fill text-xl"></i>
                         </div>
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white">Geofencing & Jarak Kantor</h3>
                         <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
@@ -148,8 +151,8 @@
 
                     <!-- Feature 2 -->
                     <div class="p-6 bg-gray-50 dark:bg-gray-950 rounded-2xl border border-gray-100 dark:border-gray-900 hover:border-emerald-500/30 transition-all space-y-4">
-                        <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 rounded-xl flex items-center justify-center text-2xl font-bold">
-                            ⏱️
+                        <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 rounded-xl flex items-center justify-center font-bold">
+                            <i class="bi bi-stopwatch-fill text-xl"></i>
                         </div>
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white">Deteksi Keterlambatan</h3>
                         <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
@@ -159,8 +162,8 @@
 
                     <!-- Feature 3 -->
                     <div class="p-6 bg-gray-50 dark:bg-gray-950 rounded-2xl border border-gray-100 dark:border-gray-900 hover:border-emerald-500/30 transition-all space-y-4">
-                        <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 rounded-xl flex items-center justify-center text-2xl font-bold">
-                            🗺️
+                        <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 rounded-xl flex items-center justify-center font-bold">
+                            <i class="bi bi-map-fill text-xl"></i>
                         </div>
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white">Peta Lokasi & Dashboard</h3>
                         <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">

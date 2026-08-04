@@ -32,7 +32,12 @@
                 </div>
             @else
                 <div class="text-2xl font-bold flex items-center gap-2">
-                    Status: {{ $todayAttendance->status === 'sick' ? '🩺 Sakit' : '📄 Izin' }}
+                    Status: 
+                    @if($todayAttendance->status === 'sick')
+                        <i class="bi bi-heart-pulse-fill mr-1"></i> Sakit
+                    @else
+                        <i class="bi bi-file-earmark-text-fill mr-1"></i> Izin
+                    @endif
                 </div>
                 <p class="text-sm text-emerald-100 mt-2 italic">Keterangan: "{{ $todayAttendance->notes }}"</p>
             @endif
@@ -46,8 +51,8 @@
                 @csrf
                 <input type="hidden" name="latitude" value="">
                 <input type="hidden" name="longitude" value="">
-                <button type="button" onclick="requestLocationAndSubmit('check-in-form')" class="px-6 py-3 bg-white text-emerald-800 font-bold rounded-xl shadow-lg hover:bg-emerald-50 hover:scale-[1.02] active:scale-95 transition duration-150">
-                    👉 Absen Masuk (Check-In)
+                <button type="button" onclick="requestLocationAndSubmit('check-in-form')" class="px-6 py-3 bg-white text-emerald-800 font-bold rounded-xl shadow-lg hover:bg-emerald-50 hover:scale-[1.02] active:scale-95 transition duration-150 flex items-center gap-1.5">
+                    <i class="bi bi-box-arrow-in-right"></i> Absen Masuk (Check-In)
                 </button>
             </form>
         @elseif($todayAttendance->status === 'present' && !$todayAttendance->check_out)
@@ -55,8 +60,8 @@
                 @csrf
                 <input type="hidden" name="latitude" value="">
                 <input type="hidden" name="longitude" value="">
-                <button type="button" onclick="requestLocationAndSubmit('check-out-form')" class="px-6 py-3 bg-rose-500 text-white font-bold rounded-xl shadow-lg hover:bg-rose-600 hover:scale-[1.02] active:scale-95 transition duration-150">
-                    👈 Absen Keluar (Check-Out)
+                <button type="button" onclick="requestLocationAndSubmit('check-out-form')" class="px-6 py-3 bg-rose-500 text-white font-bold rounded-xl shadow-lg hover:bg-rose-600 hover:scale-[1.02] active:scale-95 transition duration-150 flex items-center gap-1.5">
+                    <i class="bi bi-box-arrow-right"></i> Absen Keluar (Check-Out)
                 </button>
             </form>
         @endif

@@ -9,18 +9,25 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Office Latitude</label>
-                <input type="text" name="office_latitude" value="{{ \App\Models\Setting::get('office_latitude', '-6.873218738309585') }}" required class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                <input type="text" name="office_latitude" id="office_lat" value="{{ \App\Models\Setting::get('office_latitude', '-6.873218738309585') }}" required class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Office Longitude</label>
-                <input type="text" name="office_longitude" value="{{ \App\Models\Setting::get('office_longitude', '107.5609385222725') }}" required class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                <input type="text" name="office_longitude" id="office_lng" value="{{ \App\Models\Setting::get('office_longitude', '107.5609385222725') }}" required class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
             </div>
         </div>
         
         <div>
             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Radius Toleransi Geofencing (Meter)</label>
-            <input type="number" name="office_radius_meters" value="{{ \App\Models\Setting::get('office_radius_meters', '100') }}" required min="1" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+            <input type="number" name="office_radius_meters" id="office_radius" value="{{ \App\Models\Setting::get('office_radius_meters', '100') }}" required min="1" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
             <p class="text-[10px] text-gray-400 mt-1">Jarak radius GPS (dalam satuan meter) untuk melabeli status WFO karyawan.</p>
+        </div>
+
+        <!-- Interactive Geofence Map -->
+        <div>
+            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1.5">Peta Lokasi Kantor & Radius Geofence</label>
+            <div id="configMap" class="h-64 w-full rounded-2xl border border-gray-200 dark:border-gray-700 z-10 shadow-inner"></div>
+            <p class="text-[10px] text-gray-400 mt-1"><i class="bi bi-lightbulb"></i> Anda dapat menggeser penanda merah di peta atau klik di mana saja pada peta untuk mengatur koordinat kantor secara instan.</p>
         </div>
         
         <div>
@@ -30,7 +37,7 @@
         </div>
 
         <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition duration-150 active:scale-95 shadow-md text-sm">
-            💾 Simpan Setelan Kantor
+            <i class="bi bi-floppy"></i> Simpan Setelan Kantor
         </button>
     </form>
 </div>
