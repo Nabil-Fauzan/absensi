@@ -42,9 +42,22 @@
             const id = button.dataset.id;
             const name = button.dataset.name;
             const email = button.dataset.email;
+            const branchId = button.dataset.branchId || '';
+            const shiftId = button.dataset.shiftId || '';
+            const birthdate = button.dataset.birthdate || '';
 
             document.getElementById('editEmpName').value = name;
             document.getElementById('editEmpEmail').value = email;
+            
+            const birthdateInput = document.getElementById('editEmpBirthdate');
+            if (birthdateInput) birthdateInput.value = birthdate;
+            
+            const branchSelect = document.getElementById('editEmpBranch');
+            if (branchSelect) branchSelect.value = branchId;
+            
+            const shiftSelect = document.getElementById('editEmpShift');
+            if (shiftSelect) shiftSelect.value = shiftId;
+
             document.getElementById('editEmployeeForm').action = `/admin/employees/${id}`;
             document.getElementById('editEmployeeModal').classList.remove('hidden');
         }

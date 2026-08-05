@@ -27,6 +27,16 @@
                 </div>
             @endif
 
+            @if (isset($todayHoliday) && $todayHoliday)
+                <div class="p-6 rounded-3xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 shadow-md border border-emerald-100 dark:border-emerald-900/40 flex items-center gap-4 transition duration-150">
+                    <div class="text-3xl text-emerald-600 dark:text-emerald-400"><i class="bi bi-calendar-check-fill"></i></div>
+                    <div>
+                        <h4 class="font-extrabold text-sm md:text-base">Hari Ini Libur Nasional: {{ $todayHoliday->name }}</h4>
+                        <p class="text-xs text-emerald-600 dark:text-emerald-400/80 font-medium mt-0.5">Hari libur nasional didaftarkan untuk hari ini. Angka Belum Absen harian secara otomatis disesuaikan menjadi 0.</p>
+                    </div>
+                </div>
+            @endif
+
             <div class="space-y-6">
                 @include('admin.partials.stat-cards')
                 @include('admin.partials.geofence-status')
@@ -129,6 +139,25 @@
         function clearStatusFilter() {
             document.getElementById('filterStatus').value = '';
             document.getElementById('filterForm').submit();
+        }
+
+        // --- Date Filter Modal Helpers ---
+        function openDateFilterModal() {
+            document.getElementById('dateFilterModal').classList.remove('hidden');
+        }
+
+        function closeDateFilterModal() {
+            document.getElementById('dateFilterModal').classList.add('hidden');
+        }
+
+        function clearDateFilterAndSubmit() {
+            document.getElementById('start_date').value = '';
+            document.getElementById('end_date').value = '';
+            document.getElementById('filterForm').submit();
+        }
+
+        function setDateRangeAndSubmit(range) {
+            setDateRange(range);
         }
 
         function setDateRange(range) {

@@ -13,38 +13,99 @@
                 </span>
             @endif
         </h4>
-        <!-- Quick Date Buttons -->
-        <div class="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
-            <span>Pintasan Tanggal:</span>
-            <button type="button" onclick="setDateRange('today')" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md border border-gray-200 dark:border-gray-800 transition duration-150 active:scale-95">Hari Ini</button>
-            <button type="button" onclick="setDateRange('week')" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md border border-gray-200 dark:border-gray-800 transition duration-150 active:scale-95">Minggu Ini</button>
-            <button type="button" onclick="setDateRange('month')" class="px-2.5 py-1 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md border border-gray-200 dark:border-gray-800 transition duration-150 active:scale-95">Bulan Ini</button>
-        </div>
     </div>
-    <form method="GET" action="{{ route('dashboard') }}" id="filterForm" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+    <form method="GET" action="{{ route('admin.attendance') }}" id="filterForm" class="space-y-4">
         <input type="hidden" name="status" id="filterStatus" value="{{ request('status') }}">
-        <div>
-            <label for="search" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Cari Karyawan</label>
-            <input type="text" name="search" id="search" value="{{ request('search') }}" placeholder="Ketik nama..." class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+        
+        <!-- Search Inputs Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="md:col-span-2">
+                <label for="search" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Cari Karyawan</label>
+                <input type="text" name="search" id="search" value="{{ request('search') }}" placeholder="Ketik nama..." class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm h-11">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Rentang Tanggal</label>
+                <button type="button" onclick="openDateFilterModal()" class="w-full h-11 px-4 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-750 dark:text-gray-200 flex items-center justify-between hover:border-emerald-500 transition duration-150 active:scale-[0.98] text-left">
+                    <span class="flex items-center gap-2 overflow-hidden">
+                        <i class="bi bi-calendar-event text-emerald-600 flex-shrink-0"></i>
+                        <span id="dateRangeIndicator" class="truncate font-semibold">
+                            @if(request('start_date') || request('end_date'))
+                                {{ request('start_date') ? \Carbon\Carbon::parse(request('start_date'))->translatedFormat('d M Y') : '' }} - {{ request('end_date') ? \Carbon\Carbon::parse(request('end_date'))->translatedFormat('d M Y') : '' }}
+                            @else
+                                Semua Tanggal
+                            @endif
+                        </span>
+                    </span>
+                    <i class="bi bi-chevron-down text-gray-400 text-xs flex-shrink-0 ml-1"></i>
+                </button>
+            </div>
         </div>
-        <div>
-            <label for="start_date" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Tanggal Mulai</label>
-            <input type="date" name="start_date" id="start_date" value="{{ request('start_date') }}" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+
+        <!-- Date Filter Modal -->
+        <div id="dateFilterModal" class="fixed inset-0 z-50 hidden overflow-y-auto" role="dialog" aria-modal="true">
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-65 backdrop-blur-sm transition-opacity" onclick="closeDateFilterModal()"></div>
+            <div class="flex min-h-screen items-center justify-center p-4">
+                <div class="relative w-full max-w-md transform overflow-hidden rounded-3xl bg-white dark:bg-gray-800 shadow-2xl transition-all border border-gray-100 dark:border-gray-700 p-6 space-y-5">
+                    <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-3">
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                            <i class="bi bi-calendar-range text-emerald-600"></i> Filter Rentang Tanggal
+                        </h3>
+                        <button type="button" onclick="closeDateFilterModal()" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 text-lg p-1">✕</button>
+                    </div>
+
+                    <!-- Date Shortcuts inside modal -->
+                    <div>
+                        <span class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">Pintasan Cepat:</span>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button type="button" onclick="setDateRangeAndSubmit('today')" class="py-2 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-350 rounded-xl border border-gray-200 dark:border-gray-700 text-[11px] font-bold transition active:scale-95">Hari Ini</button>
+                            <button type="button" onclick="setDateRangeAndSubmit('week')" class="py-2 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-350 rounded-xl border border-gray-200 dark:border-gray-700 text-[11px] font-bold transition active:scale-95">Minggu Ini</button>
+                            <button type="button" onclick="setDateRangeAndSubmit('month')" class="py-2 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-350 rounded-xl border border-gray-200 dark:border-gray-700 text-[11px] font-bold transition active:scale-95">Bulan Ini</button>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
+                        <span class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2.5">Pilih Rentang Manual:</span>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="start_date" class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Tanggal Mulai</label>
+                                <input type="date" name="start_date" id="start_date" value="{{ request('start_date') }}" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                            </div>
+                            <div>
+                                <label for="end_date" class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Tanggal Selesai</label>
+                                <input type="date" name="end_date" id="end_date" value="{{ request('end_date') }}" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
+                        <button type="button" onclick="clearDateFilterAndSubmit()" class="px-4 py-2 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-450 hover:bg-rose-100 rounded-xl text-xs font-bold active:scale-95 transition border border-rose-100 dark:border-rose-900/60">Hapus Filter</button>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="closeDateFilterModal()" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold rounded-xl text-xs active:scale-95 transition">Batal</button>
+                            <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs active:scale-95 transition shadow-md">Terapkan</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div>
-            <label for="end_date" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Tanggal Selesai</label>
-            <input type="date" name="end_date" id="end_date" value="{{ request('end_date') }}" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-        </div>
-        <div class="flex gap-2">
-            <button type="submit" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition duration-150 active:scale-95 shadow-md flex items-center justify-center gap-1.5">
-                <i class="bi bi-search"></i> Filter
-            </button>
-            <a href="{{ route('dashboard') }}" class="py-2.5 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-750 dark:text-gray-200 font-bold rounded-xl text-sm transition duration-150 active:scale-95 text-center flex items-center justify-center">
-                Reset
-            </a>
-            <a href="{{ route('attendance.export', request()->all()) }}" class="py-2.5 px-4 bg-emerald-100 dark:bg-emerald-950/40 hover:bg-emerald-250 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-400 font-bold rounded-xl text-sm transition duration-150 active:scale-95 text-center flex items-center justify-center gap-1.5">
-                <i class="bi bi-download"></i> Ekspor
-            </a>
+
+        <!-- Action Buttons Row -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-3 border-t border-gray-100 dark:border-gray-700/60">
+            <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1"><i class="bi bi-info-circle-fill text-emerald-600"></i> Menampilkan rekap kehadiran karyawan terdaftar.</span>
+            
+            <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                <button type="submit" class="flex-1 sm:flex-initial px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition duration-150 active:scale-95 shadow-md flex items-center justify-center gap-1.5 h-10">
+                    <i class="bi bi-search"></i> Filter
+                </button>
+                <a href="{{ route('admin.attendance') }}" class="flex-1 sm:flex-initial px-5 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-750 dark:text-gray-200 font-bold rounded-xl text-xs transition duration-150 active:scale-95 text-center flex items-center justify-center h-10">
+                    Reset
+                </a>
+                <a href="{{ route('attendance.export', request()->all()) }}" class="flex-1 sm:flex-initial px-5 py-2.5 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-400 font-bold rounded-xl text-xs transition duration-150 active:scale-95 text-center flex items-center justify-center gap-1.5 h-10" title="Ekspor data rekap absensi ke Excel">
+                    <i class="bi bi-file-earmark-excel"></i> Excel
+                </a>
+                <a href="{{ route('admin.attendance.print', request()->all()) }}" target="_blank" class="flex-1 sm:flex-initial px-5 py-2.5 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-800 dark:text-blue-400 font-bold rounded-xl text-xs transition duration-150 active:scale-95 text-center flex items-center justify-center gap-1.5 h-10" title="Buka pratinjau cetak PDF laporan premium">
+                    <i class="bi bi-printer"></i> Cetak (PDF)
+                </a>
+            </div>
         </div>
     </form>
 </div>
@@ -78,13 +139,28 @@
                             {{ $att->user->name }}
                             <div class="text-xs text-gray-400 font-normal">{{ $att->user->email }}</div>
                             @if($att->status === 'present')
-                                <div class="mt-1">
+                                <div class="mt-1 flex flex-wrap gap-1">
                                     @if($att->work_mode === 'wfo')
                                         <span class="px-2 py-0.5 text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 rounded border border-emerald-200 dark:border-emerald-900/60 inline-flex items-center gap-1"><i class="bi bi-building"></i> WFO (Di Kantor)</span>
                                     @else
                                         <span class="px-2 py-0.5 text-[9px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded border border-amber-200 dark:border-amber-900/60 inline-flex items-center gap-1"><i class="bi bi-house-door"></i> WFH (Luar Kantor)</span>
                                     @endif
+                                    
+                                    @if($att->is_suspicious)
+                                        <span class="px-2 py-0.5 text-[9px] font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-450 rounded border border-rose-200 dark:border-rose-900/40 inline-flex items-center gap-1 animate-pulse" title="{{ $att->spoof_reason }}">
+                                            <i class="bi bi-exclamation-triangle-fill text-rose-600"></i> Mencurigakan
+                                        </span>
+                                    @endif
+
+                                    @if($att->is_ip_fallback)
+                                        <span class="px-2 py-0.5 text-[9px] font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 rounded border border-blue-200 dark:border-blue-900/60 inline-flex items-center gap-1" title="Absen menggunakan pencarian lokasi IP fallback">
+                                            <i class="bi bi-globe"></i> IP Fallback
+                                        </span>
+                                    @endif
                                 </div>
+                                @if($att->is_suspicious && $att->spoof_reason)
+                                    <div class="text-[8px] text-rose-500 font-semibold mt-1">Alasan: {{ $att->spoof_reason }}</div>
+                                @endif
                             @endif
                         </td>
                         <td class="p-4 text-gray-900 dark:text-gray-300 font-semibold">{{ \Carbon\Carbon::parse($att->date)->translatedFormat('d F Y') }}</td>

@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Attendance;
 use App\Models\User;
+use App\Models\Branch;
+use App\Models\Shift;
+use App\Models\Holiday;
 use App\Mail\LeaveRequestedMail;
 use App\Mail\LeaveStatusUpdatedMail;
 use Carbon\Carbon;
@@ -46,31 +49,88 @@ class AttendanceController extends Controller
             return redirect()->back()->with('error', 'Anda sudah mengajukan izin/sakit hari ini.');
         }
 
-        // Calculate Geofencing
-        $officeLat = \App\Models\Setting::get('office_latitude', env('OFFICE_LATITUDE', -6.873218738309585));
-        $officeLon = \App\Models\Setting::get('office_longitude', env('OFFICE_LONGITUDE', 107.5609385222725));
-        $officeRadius = \App\Models\Setting::get('office_radius_meters', env('OFFICE_RADIUS_METERS', 100));
-        
-        $workMode = 'wfo';
-        if ($request->latitude && $request->longitude) {
-            $distance = $this->calculateDistance($request->latitude, $request->longitude, $officeLat, $officeLon);
-            if ($distance > $officeRadius) {
-                $workMode = 'wfh';
-            }
+        // Load user with branch and shift relations
+        $user = User::with(['branch', 'shift'])->find($userId);
+
+        // 1. Resolve Office/Branch Coordinates
+        if ($user && $user->branch) {
+            $officeLat = $user->branch->latitude;
+            $officeLon = $user->branch->longitude;
+            $officeRadius = $user->branch->radius_meters;
         } else {
-            $workMode = 'wfh';
+            $officeLat = \App\Models\Setting::get('office_latitude', env('OFFICE_LATITUDE', -6.873218738309585));
+            $officeLon = \App\Models\Setting::get('office_longitude', env('OFFICE_LONGITUDE', 107.5609385222725));
+            $officeRadius = \App\Models\Setting::get('office_radius_meters', env('OFFICE_RADIUS_METERS', 100));
         }
 
-        // Calculate Keterlambatan
-        $limitStr = \App\Models\Setting::get('office_check_in_time', env('OFFICE_CHECK_IN_TIME', '08:00:00'));
-        $now = Carbon::now();
+        // 2. Resolve Client Location & IP Fallback
+        $gpsLat = $request->latitude;
+        $gpsLon = $request->longitude;
+        $ipLat = $request->ip_latitude;
+        $ipLon = $request->ip_longitude;
         
+        $lat = null;
+        $lon = null;
+        $isIpFallback = false;
+
+        if ($gpsLat !== null && $gpsLon !== null && $gpsLat !== '' && $gpsLon !== '') {
+            $lat = floatval($gpsLat);
+            $lon = floatval($gpsLon);
+        } elseif ($ipLat !== null && $ipLon !== null && $ipLat !== '' && $ipLon !== '') {
+            $lat = floatval($ipLat);
+            $lon = floatval($ipLon);
+            $isIpFallback = true;
+        }
+
+        // 3. Mock Geolocation Detection
+        $isSuspicious = false;
+        $spoofReason = null;
+
+        // A. Accuracy Check
+        if ($gpsLat !== null && $gpsLon !== null) {
+            // Check if accuracy is 0 (a standard signature of fake GPS software on web browser)
+            if ($request->has('accuracy') && floatval($request->accuracy) === 0.0) {
+                $isSuspicious = true;
+                $spoofReason = 'Akurasi GPS bernilai 0 (Potensi GPS Palsu)';
+            }
+            if ($request->mocked == true || $request->mocked === 'true') {
+                $isSuspicious = true;
+                $spoofReason = 'Deteksi emulator GPS aktif';
+            }
+            
+            // B. IP Distance Deviation Check
+            if ($ipLat !== null && $ipLon !== null && $ipLat !== '' && $ipLon !== '') {
+                $ipDistance = $this->calculateDistance($lat, $lon, floatval($ipLat), floatval($ipLon));
+                // If GPS is > 50km away from IP location, flag as suspicious
+                if ($ipDistance > 50000) {
+                    $isSuspicious = true;
+                    $spoofReason = 'Penyimpangan GPS dan IP > 50km (' . round($ipDistance / 1000) . ' km)';
+                }
+            }
+        }
+
+        // 4. Calculate Geofencing
+        $workMode = 'wfh';
+        if ($lat !== null && $lon !== null) {
+            $distance = $this->calculateDistance($lat, $lon, $officeLat, $officeLon);
+            if ($distance <= $officeRadius) {
+                $workMode = 'wfo';
+            }
+        }
+
+        // 5. Calculate Keterlambatan relative to Shift
+        if ($user && $user->shift) {
+            $limitStr = $user->shift->start_time;
+        } else {
+            $limitStr = \App\Models\Setting::get('office_check_in_time', env('OFFICE_CHECK_IN_TIME', '08:00:00'));
+        }
+
+        $now = Carbon::now();
         try {
             $limitTime = Carbon::parse($limitStr);
         } catch (\Exception $e) {
             $limitTime = Carbon::parse('08:00:00');
         }
-        
         $limitTime->setDate($now->year, $now->month, $now->day);
         
         $minutesLate = 0;
@@ -78,17 +138,25 @@ class AttendanceController extends Controller
             $minutesLate = $now->diffInMinutes($limitTime);
         }
 
-        // Create new attendance
+        // 6. Create new attendance
         Attendance::create([
             'user_id' => $userId,
             'date' => $today,
             'check_in' => $now->toTimeString(),
             'status' => 'present',
-            'latitude_in' => $request->latitude,
-            'longitude_in' => $request->longitude,
+            'latitude_in' => $lat,
+            'longitude_in' => $lon,
             'work_mode' => $workMode,
             'minutes_late' => $minutesLate,
+            'is_suspicious' => $isSuspicious,
+            'spoof_reason' => $spoofReason,
+            'is_ip_fallback' => $isIpFallback,
+            'notes' => $isIpFallback ? 'Absen via IP Fallback (' . ($request->ip_city ?? 'Lokasi IP') . ')' : null,
         ]);
+
+        if ($isSuspicious) {
+            return redirect()->back()->with('success', 'Absen masuk berhasil dicatat, namun ditandai mencurigakan: ' . $spoofReason);
+        }
 
         return redirect()->back()->with('success', 'Absen masuk berhasil dicatat!');
     }
@@ -194,6 +262,15 @@ class AttendanceController extends Controller
             ->orderBy('date', 'desc')
             ->get();
 
+        // Detect National Holiday for Today
+        $todayHoliday = Holiday::where('date', $today)->first();
+
+        // Detect Birthday
+        $isBirthday = false;
+        if ($user->birthdate) {
+            $isBirthday = Carbon::parse($user->birthdate)->format('m-d') === Carbon::today()->format('m-d');
+        }
+
         // Calculate Monthly Statistics for Employee
         $startOfMonth = Carbon::now()->startOfMonth()->toDateString();
         $endOfMonth = Carbon::now()->endOfMonth()->toDateString();
@@ -212,7 +289,34 @@ class AttendanceController extends Controller
         $totalDays = $monthlyStats['present'] + $monthlyStats['sick'] + $monthlyStats['leave'];
         $monthlyStats['attendance_rate'] = $totalDays > 0 ? round(($monthlyStats['present'] / $totalDays) * 100) : 0;
 
-        return view('dashboard', compact('todayAttendance', 'attendances', 'monthlyStats'));
+        // Calculate Yearly Leaves Usage for Quotas
+        $startOfYear = Carbon::now()->startOfYear()->toDateString();
+        $endOfYear = Carbon::now()->endOfYear()->toDateString();
+        
+        $yearlyAttendance = Attendance::where('user_id', $user->id)
+            ->whereBetween('date', [$startOfYear, $endOfYear])
+            ->get();
+
+        $birthdayLeaveUsed = 0;
+        if ($user->birthdate) {
+            $birthdayThisYear = Carbon::parse($user->birthdate)->year(Carbon::now()->year)->toDateString();
+            $birthdayLeaveUsed = $yearlyAttendance->where('status', 'leave')
+                ->where('approval_status', 'approved')
+                ->where('date', $birthdayThisYear)
+                ->count();
+        }
+
+        $yearlyLeaves = $yearlyAttendance->where('status', 'leave')->where('approval_status', 'approved');
+        if ($user->birthdate) {
+            $birthdayThisYear = Carbon::parse($user->birthdate)->year(Carbon::now()->year)->toDateString();
+            $yearlyLeaves = $yearlyLeaves->where('date', '!=', $birthdayThisYear);
+        }
+        $annualLeavesUsed = $yearlyLeaves->count();
+
+        $monthlyStats['annual_leaves_left'] = max(0, 15 - $annualLeavesUsed);
+        $monthlyStats['birthday_leaves_left'] = $user->birthdate ? max(0, 1 - $birthdayLeaveUsed) : 0;
+
+        return view('dashboard', compact('todayAttendance', 'attendances', 'monthlyStats', 'todayHoliday', 'isBirthday'));
     }
 
     /**
@@ -233,6 +337,9 @@ class AttendanceController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // Detect National Holiday for Today
+        $todayHoliday = Holiday::where('date', $today)->first();
+
         // Calculate daily stats for today
         $totalHadir = Attendance::where('date', $today)
             ->where('status', 'present')
@@ -250,12 +357,17 @@ class AttendanceController extends Controller
         $employeeUserIds = User::where('role', 'employee')->pluck('id');
         $absentTodayUserIds = Attendance::where('date', $today)->pluck('user_id');
         $belumAbsenUserIds = $employeeUserIds->diff($absentTodayUserIds);
-        $totalBelumAbsen = $belumAbsenUserIds->count();
-
-        // Compile names of employees who haven't checked in
-        $belumAbsenUsers = User::whereIn('id', $belumAbsenUserIds)
-            ->orderBy('name', 'asc')
-            ->get(['name', 'email']);
+        
+        // If today is a national holiday, set belum_absen to 0
+        if ($todayHoliday) {
+            $totalBelumAbsen = 0;
+            $belumAbsenUsers = collect();
+        } else {
+            $totalBelumAbsen = $belumAbsenUserIds->count();
+            $belumAbsenUsers = User::whereIn('id', $belumAbsenUserIds)
+                ->orderBy('name', 'asc')
+                ->get(['name', 'email']);
+        }
 
         $stats = [
             'hadir' => $totalHadir,
@@ -280,7 +392,12 @@ class AttendanceController extends Controller
                 ->whereIn('status', ['sick', 'leave'])
                 ->count();
                 
-            $belumAbsenCount = max(0, $employeeCount - ($hadirCount + $izinCount));
+            $isDateHoliday = Holiday::where('date', $dateString)->exists();
+            if ($isDateHoliday) {
+                $belumAbsenCount = 0;
+            } else {
+                $belumAbsenCount = max(0, $employeeCount - ($hadirCount + $izinCount));
+            }
             
             $chartData[] = [
                 'label' => $dayName,
@@ -303,7 +420,7 @@ class AttendanceController extends Controller
             'check_in_limit' => $checkInTimeLimit,
         ];
 
-        return view('admin.attendance', compact('attendances', 'stats', 'belumAbsenUsers', 'chartData', 'officeConfig'));
+        return view('admin.attendance', compact('attendances', 'stats', 'belumAbsenUsers', 'chartData', 'officeConfig', 'todayHoliday'));
     }
 
     /**
@@ -316,9 +433,11 @@ class AttendanceController extends Controller
             abort(403);
         }
 
-        $employees = User::where('role', 'employee')->orderBy('name', 'asc')->get();
+        $employees = User::with(['branch', 'shift'])->where('role', 'employee')->orderBy('name', 'asc')->get();
+        $branches = Branch::orderBy('name', 'asc')->get();
+        $shifts = Shift::orderBy('name', 'asc')->get();
 
-        return view('admin.employees', compact('employees'));
+        return view('admin.employees', compact('employees', 'branches', 'shifts'));
     }
 
     /**
@@ -343,11 +462,15 @@ class AttendanceController extends Controller
             'check_in_limit' => $checkInTimeLimit,
         ];
 
-        return view('admin.settings', compact('officeConfig'));
+        $branches = Branch::orderBy('name', 'asc')->get();
+        $shifts = Shift::orderBy('name', 'asc')->get();
+        $holidays = Holiday::orderBy('date', 'desc')->get();
+
+        return view('admin.settings', compact('officeConfig', 'branches', 'shifts', 'holidays'));
     }
 
     /**
-     * Export the attendance report to a CSV file.
+     * Export the attendance report to a styled Excel (XLS) file.
      */
     public function export(Request $request)
     {
@@ -356,29 +479,141 @@ class AttendanceController extends Controller
             abort(403);
         }
 
-        $query = Attendance::with('user');
+        $query = Attendance::with(['user.branch', 'user.shift']);
         $query = $this->applyAttendanceFilters($query, $request);
 
         $attendances = $query->orderBy('date', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $filename = "rekap_absensi_" . Carbon::now()->format('Y-m-d_H-i-s') . ".csv";
+        $filename = "rekap_absensi_" . Carbon::now()->format('Y-m-d_H-i-s') . ".xls";
 
         $headers = [
-            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Type"        => "application/vnd.ms-excel; charset=UTF-8",
             "Content-Disposition" => "attachment; filename=$filename",
             "Pragma"              => "no-cache",
             "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
             "Expires"             => "0"
         ];
 
-        $columns = ['Nama Karyawan', 'Tanggal', 'Status', 'Jam Masuk', 'Jam Pulang', 'Mode Kerja', 'Keterlambatan', 'Keterangan', 'Lokasi Masuk', 'Lokasi Pulang'];
-
-        $callback = function() use($attendances, $columns) {
-            $file = fopen('php://output', 'w');
-            fputs($file, "\xEF\xBB\xBF"); // UTF-8 BOM
-            fputcsv($file, $columns, ';');
+        $callback = function() use($attendances) {
+            $output = fopen('php://output', 'w');
+            
+            // Output UTF-8 BOM
+            fputs($output, "\xEF\xBB\xBF");
+            
+            // Styled Excel HTML markup
+            $html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta http-equiv="Content-type" content="text/html;charset=utf-8" />
+<style>
+    th {
+        background-color: #059669;
+        color: #ffffff;
+        font-weight: bold;
+        border: 0.5px solid #d1d5db;
+        padding: 10px 14px;
+        font-size: 11px;
+        text-align: center;
+        font-family: "Segoe UI", Arial, sans-serif;
+    }
+    td {
+        border: 0.5px solid #e5e7eb;
+        padding: 8px 10px;
+        font-size: 10px;
+        vertical-align: middle;
+        font-family: "Segoe UI", Arial, sans-serif;
+    }
+    .font-mono {
+        font-family: "Courier New", monospace;
+    }
+    .text-center {
+        text-align: center;
+    }
+    .text-right {
+        text-align: right;
+    }
+    .badge-present {
+        background-color: #d1fae5;
+        color: #065f46;
+        font-weight: bold;
+        text-align: center;
+    }
+    .badge-sick {
+        background-color: #fef3c7;
+        color: #92400e;
+        font-weight: bold;
+        text-align: center;
+    }
+    .badge-leave {
+        background-color: #dbeafe;
+        color: #1e40af;
+        font-weight: bold;
+        text-align: center;
+    }
+    .badge-wfo {
+        background-color: #f3f4f6;
+        color: #374151;
+        text-align: center;
+    }
+    .badge-wfh {
+        background-color: #fef3c7;
+        color: #92400e;
+        text-align: center;
+    }
+    .text-suspicious {
+        background-color: #fee2e2;
+        color: #b91c1c;
+        font-weight: bold;
+    }
+    .text-late {
+        color: #dc2626;
+        font-weight: bold;
+    }
+    .text-on-time {
+        color: #059669;
+        font-weight: bold;
+    }
+</style>
+<!--[if gte mso 9]>
+<xml>
+<x:ExcelWorkbook>
+  <x:ExcelWorksheets>
+    <x:ExcelWorksheet>
+      <x:Name>Rekap Absensi</x:Name>
+      <x:WorksheetOptions>
+        <x:DisplayGridlines/>
+      </x:WorksheetOptions>
+    </x:ExcelWorksheet>
+  </x:ExcelWorksheets>
+</x:ExcelWorkbook>
+</xml>
+<![endif]-->
+</head>
+<body>
+<table>
+    <thead>
+        <tr>
+            <th>Nama Karyawan</th>
+            <th>Email</th>
+            <th>Cabang Kantor</th>
+            <th>Shift Kerja</th>
+            <th>Tanggal</th>
+            <th>Status Kehadiran</th>
+            <th>Status Approval</th>
+            <th>Jam Masuk</th>
+            <th>Jam Keluar</th>
+            <th>Mode Kerja</th>
+            <th>Keterlambatan</th>
+            <th>Lokasi Masuk (Koordinat)</th>
+            <th>Lokasi Keluar (Koordinat)</th>
+            <th>Status Keamanan GPS</th>
+            <th>Catatan / Alasan Penolakan</th>
+        </tr>
+    </thead>
+    <tbody>';
+            
+            fputs($output, $html);
 
             foreach ($attendances as $att) {
                 $statusLabel = match($att->status) {
@@ -388,34 +623,96 @@ class AttendanceController extends Controller
                     default => $att->status
                 };
 
+                $statusClass = match($att->status) {
+                    'present' => 'badge-present',
+                    'sick' => 'badge-sick',
+                    'leave' => 'badge-leave',
+                    default => ''
+                };
+
+                $approvalLabel = '-';
+                $approvalClass = '';
+                if (in_array($att->status, ['sick', 'leave'])) {
+                    $approvalLabel = match($att->approval_status) {
+                        'pending' => 'Menunggu Persetujuan',
+                        'approved' => 'Disetujui',
+                        'rejected' => 'Ditolak',
+                        default => $att->approval_status
+                    };
+                    $approvalClass = match($att->approval_status) {
+                        'approved' => 'badge-present',
+                        'rejected' => 'text-late',
+                        default => ''
+                    };
+                }
+
                 $workModeLabel = '-';
+                $workModeClass = '';
                 if ($att->status === 'present') {
-                    $workModeLabel = $att->work_mode === 'wfh' ? 'WFH (Luar Kantor)' : 'WFO (Di Kantor)';
+                    $workModeLabel = $att->work_mode === 'wfh' ? 'WFH' : 'WFO';
+                    $workModeClass = $att->work_mode === 'wfh' ? 'badge-wfh' : 'badge-wfo';
                 }
 
                 $lateLabel = '-';
+                $lateClass = '';
                 if ($att->status === 'present') {
                     $lateLabel = $att->minutes_late > 0 ? "Terlambat {$att->minutes_late} Menit" : 'Tepat Waktu';
+                    $lateClass = $att->minutes_late > 0 ? 'text-late' : 'text-on-time';
                 }
 
-                $locationIn = $att->latitude_in ? "https://www.google.com/maps/search/?api=1&query={$att->latitude_in},{$att->longitude_in}" : 'Tidak Ada GPS';
-                $locationOut = $att->latitude_out ? "https://www.google.com/maps/search/?api=1&query={$att->latitude_out},{$att->longitude_out}" : 'Tidak Ada GPS';
+                // Clean coordinates display
+                $locationIn = 'Tidak Ada GPS';
+                if ($att->latitude_in) {
+                    $locationIn = $att->is_ip_fallback 
+                        ? "IP Fallback: {$att->latitude_in}, {$att->longitude_in}"
+                        : "{$att->latitude_in}, {$att->longitude_in}";
+                }
 
-                fputcsv($file, [
-                    $att->user->name,
-                    $att->date,
-                    $statusLabel,
-                    $att->check_in ?? '-',
-                    $att->check_out ?? '-',
-                    $workModeLabel,
-                    $lateLabel,
-                    $att->notes ?? '-',
-                    $locationIn,
-                    $locationOut
-                ], ';');
+                $locationOut = 'Tidak Ada GPS';
+                if ($att->latitude_out) {
+                    $locationOut = "{$att->latitude_out}, {$att->longitude_out}";
+                }
+
+                // Security Status
+                $securityLabel = 'Aman';
+                $securityClass = '';
+                if ($att->status === 'present' && $att->is_suspicious) {
+                    $securityLabel = "Mencurigakan: {$att->spoof_reason}";
+                    $securityClass = "text-suspicious";
+                }
+
+                // Combine notes and rejection reason
+                $notes = $att->notes ?? '';
+                if ($att->status !== 'present' && $att->approval_status === 'rejected' && $att->rejection_reason) {
+                    $notes = ($notes ? $notes . ' | ' : '') . 'Penolakan: ' . $att->rejection_reason;
+                }
+                if (empty($notes)) {
+                    $notes = '-';
+                }
+
+                $row = '<tr>';
+                $row .= '<td>' . htmlspecialchars($att->user->name) . '</td>';
+                $row .= '<td>' . htmlspecialchars($att->user->email) . '</td>';
+                $row .= '<td>' . htmlspecialchars($att->user->branch->name ?? 'Kantor Pusat') . '</td>';
+                $row .= '<td>' . htmlspecialchars($att->user->shift->name ?? 'Default (08:00)') . '</td>';
+                $row .= '<td class="text-center font-mono">' . Carbon::parse($att->date)->translatedFormat('d-m-Y') . '</td>';
+                $row .= '<td class="' . $statusClass . '">' . $statusLabel . '</td>';
+                $row .= '<td class="text-center ' . $approvalClass . '">' . $approvalLabel . '</td>';
+                $row .= '<td class="text-center font-mono">' . ($att->check_in ?? '-') . '</td>';
+                $row .= '<td class="text-center font-mono">' . ($att->check_out ?? '-') . '</td>';
+                $row .= '<td class="' . $workModeClass . '">' . $workModeLabel . '</td>';
+                $row .= '<td class="text-center ' . $lateClass . '">' . $lateLabel . '</td>';
+                $row .= '<td class="font-mono">' . htmlspecialchars($locationIn) . '</td>';
+                $row .= '<td class="font-mono">' . htmlspecialchars($locationOut) . '</td>';
+                $row .= '<td class="' . $securityClass . '">' . htmlspecialchars($securityLabel) . '</td>';
+                $row .= '<td>' . htmlspecialchars($notes) . '</td>';
+                $row .= '</tr>';
+
+                fputs($output, $row);
             }
 
-            fclose($file);
+            fputs($output, '</tbody></table></body></html>');
+            fclose($output);
         };
 
         return response()->stream($callback, 200, $headers);
@@ -480,6 +777,9 @@ class AttendanceController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
+            'branch_id' => 'nullable|exists:branches,id',
+            'shift_id' => 'nullable|exists:shifts,id',
+            'birthdate' => 'nullable|date',
         ]);
 
         User::create([
@@ -487,6 +787,9 @@ class AttendanceController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => 'employee',
+            'branch_id' => $request->branch_id,
+            'shift_id' => $request->shift_id,
+            'birthdate' => $request->birthdate,
         ]);
 
         return back()->with('success', 'Akun karyawan baru berhasil dibuat!')->with('active_tab', 'employee-tab');
@@ -508,10 +811,16 @@ class AttendanceController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $employee->id,
             'password' => 'nullable|string|min:8',
+            'branch_id' => 'nullable|exists:branches,id',
+            'shift_id' => 'nullable|exists:shifts,id',
+            'birthdate' => 'nullable|date',
         ]);
 
         $employee->name = $request->name;
         $employee->email = $request->email;
+        $employee->branch_id = $request->branch_id;
+        $employee->shift_id = $request->shift_id;
+        $employee->birthdate = $request->birthdate;
         if ($request->filled('password')) {
             $employee->password = Hash::make($request->password);
         }
@@ -648,6 +957,276 @@ class AttendanceController extends Controller
 
         $typeLabel = $attendance->status === 'sick' ? 'Sakit' : 'Izin';
         return back()->with('success', "Pengajuan {$typeLabel} dari {$attendance->user->name} berhasil ditolak.");
+    }
+
+    /**
+     * Show a print-ready report of the attendance log.
+     */
+    public function printReport(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $query = Attendance::with('user');
+        $query = $this->applyAttendanceFilters($query, $request);
+
+        $attendances = $query->orderBy('date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('admin.print-report', compact('attendances'));
+    }
+
+    // --- BRANCH CRUD ---
+    public function storeBranch(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'radius_meters' => 'required|integer|min:1',
+        ]);
+
+        Branch::create($request->all());
+
+        return back()->with('success', 'Cabang kantor baru berhasil ditambahkan!')->with('active_tab', 'branches-tab');
+    }
+
+    public function updateBranch(Request $request, int $id)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $branch = Branch::findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'radius_meters' => 'required|integer|min:1',
+        ]);
+
+        $branch->update($request->all());
+
+        return back()->with('success', 'Data cabang kantor berhasil diperbarui!')->with('active_tab', 'branches-tab');
+    }
+
+    public function destroyBranch(int $id)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $branch = Branch::findOrFail($id);
+        $branch->delete();
+
+        return back()->with('success', 'Cabang kantor berhasil dihapus!')->with('active_tab', 'branches-tab');
+    }
+
+    // --- SHIFT CRUD ---
+    public function storeShift(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'start_time' => 'required',
+            'end_time' => 'required',
+        ]);
+
+        Shift::create($request->all());
+
+        return back()->with('success', 'Shift kerja baru berhasil ditambahkan!')->with('active_tab', 'shifts-tab');
+    }
+
+    public function updateShift(Request $request, int $id)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $shift = Shift::findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'start_time' => 'required',
+            'end_time' => 'required',
+        ]);
+
+        $shift->update($request->all());
+
+        return back()->with('success', 'Data shift kerja berhasil diperbarui!')->with('active_tab', 'shifts-tab');
+    }
+
+    public function destroyShift(int $id)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $shift = Shift::findOrFail($id);
+        $shift->delete();
+
+        return back()->with('success', 'Shift kerja berhasil dihapus!')->with('active_tab', 'shifts-tab');
+    }
+
+    // --- HOLIDAY CRUD ---
+    public function storeHoliday(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'date' => 'required|date|unique:holidays,date',
+        ]);
+
+        Holiday::create($request->all());
+
+        return back()->with('success', 'Hari libur nasional baru berhasil ditambahkan!')->with('active_tab', 'holidays-tab');
+    }
+
+    public function destroyHoliday(int $id)
+    {
+        $user = Auth::user();
+        if (!$user instanceof \App\Models\User || !$user->isAdmin()) {
+            abort(403);
+        }
+
+        $holiday = Holiday::findOrFail($id);
+        $holiday->delete();
+
+        return back()->with('success', 'Hari libur berhasil dihapus!')->with('active_tab', 'holidays-tab');
+    }
+
+    /**
+     * Show a print-ready monthly attendance slip for a specific employee.
+     */
+    public function printSlip(User $user, Request $request)
+    {
+        $admin = Auth::user();
+        if (!$admin instanceof \App\Models\User || !$admin->isAdmin()) {
+            abort(403);
+        }
+
+        // Target month/year default to current month
+        $monthParam = $request->input('month', Carbon::now()->format('m'));
+        $yearParam = $request->input('year', Carbon::now()->format('Y'));
+        
+        $startDate = Carbon::createFromDate($yearParam, $monthParam, 1)->startOfMonth();
+        $endDate = Carbon::createFromDate($yearParam, $monthParam, 1)->endOfMonth();
+
+        $attendances = Attendance::where('user_id', $user->id)
+            ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->get()
+            ->keyBy('date');
+
+        $holidays = Holiday::whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->get()
+            ->keyBy(fn($h) => Carbon::parse($h->date)->toDateString());
+
+        $daysGrid = [];
+        $tempDate = $startDate->copy();
+
+        $totalHadir = 0;
+        $totalSakit = 0;
+        $totalIzinTahunan = 0;
+        $totalIzinUltah = 0;
+        $totalAlfa = 0;
+        $totalTerlambatMenit = 0;
+
+        while ($tempDate->lte($endDate)) {
+            $dateStr = $tempDate->toDateString();
+            $isWeekend = $tempDate->isWeekend();
+            $holidayObj = $holidays->get($dateStr);
+            $att = $attendances->get($dateStr);
+
+            $status = 'Alfa'; // Default if work day and no check-in
+            $checkIn = '-';
+            $checkOut = '-';
+            $workMode = '-';
+            $lateness = 0;
+            $notes = '';
+
+            if ($att) {
+                $notes = $att->notes ?? '';
+                if ($att->status === 'present') {
+                    $status = 'Hadir';
+                    $checkIn = $att->check_in ?? '-';
+                    $checkOut = $att->check_out ?? '-';
+                    $workMode = strtoupper($att->work_mode ?? '-');
+                    $lateness = $att->minutes_late;
+                    $totalHadir++;
+                    $totalTerlambatMenit += $lateness;
+                } elseif ($att->status === 'sick') {
+                    $status = 'Sakit';
+                    $totalSakit++;
+                } elseif ($att->status === 'leave') {
+                    // Check if birthday leave
+                    $isBirthdayLeave = $user->birthdate && Carbon::parse($user->birthdate)->format('m-d') === $tempDate->format('m-d');
+                    if ($isBirthdayLeave) {
+                        $status = 'Cuti Ulang Tahun';
+                        $totalIzinUltah++;
+                    } else {
+                        $status = 'Cuti Tahunan';
+                        $totalIzinTahunan++;
+                    }
+                }
+            } else {
+                if ($isWeekend) {
+                    $status = 'Akhir Pekan';
+                } elseif ($holidayObj) {
+                    $status = 'Hari Libur (' . $holidayObj->name . ')';
+                } elseif ($tempDate->gt(Carbon::now())) {
+                    $status = '-'; // Future date
+                } else {
+                    $totalAlfa++;
+                }
+            }
+
+            $daysGrid[] = [
+                'date' => $tempDate->copy(),
+                'day_name' => $tempDate->translatedFormat('l'),
+                'status' => $status,
+                'check_in' => $checkIn,
+                'check_out' => $checkOut,
+                'work_mode' => $workMode,
+                'lateness' => $lateness,
+                'notes' => $notes,
+            ];
+
+            $tempDate->addDay();
+        }
+
+        $stats = [
+            'hadir' => $totalHadir,
+            'sakit' => $totalSakit,
+            'izin_tahunan' => $totalIzinTahunan,
+            'izin_ultah' => $totalIzinUltah,
+            'alfa' => $totalAlfa,
+            'terlambat' => $totalTerlambatMenit,
+        ];
+
+        $monthName = $startDate->translatedFormat('F Y');
+
+        return view('admin.print-slip', compact('user', 'daysGrid', 'stats', 'monthName'));
     }
 
     /**

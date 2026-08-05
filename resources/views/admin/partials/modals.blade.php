@@ -146,9 +146,35 @@
                     <input type="email" name="email" required class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
                 </div>
                 <div>
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Tanggal Lahir</label>
+                    <input type="date" name="birthdate" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                </div>
+                <div>
                     <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Kata Sandi</label>
                     <input type="password" name="password" required minlength="8" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
                 </div>
+                @if(isset($branches))
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Cabang Kantor</label>
+                    <select name="branch_id" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                        <option value="">Kantor Pusat (Bawaan)</option>
+                        @foreach($branches as $b)
+                            <option value="{{ $b->id }}">{{ $b->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
+                @if(isset($shifts))
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Shift Kerja</label>
+                    <select name="shift_id" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                        <option value="">Shift Default (Bawaan)</option>
+                        @foreach($shifts as $s)
+                            <option value="{{ $s->id }}">{{ $s->name }} ({{ substr($s->start_time, 0, 5) }} - {{ substr($s->end_time, 0, 5) }})</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" onclick="closeAddEmployeeModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold rounded-xl text-xs active:scale-95">Batal</button>
                     <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs active:scale-95 shadow-md">Simpan</button>
@@ -179,9 +205,35 @@
                     <input type="email" name="email" id="editEmpEmail" required class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
                 </div>
                 <div>
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Tanggal Lahir</label>
+                    <input type="date" name="birthdate" id="editEmpBirthdate" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                </div>
+                <div>
                     <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Kata Sandi Baru (Opsional)</label>
                     <input type="password" name="password" minlength="8" placeholder="Kosongkan jika tidak ingin diubah" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
                 </div>
+                @if(isset($branches))
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Cabang Kantor</label>
+                    <select name="branch_id" id="editEmpBranch" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                        <option value="">Kantor Pusat (Bawaan)</option>
+                        @foreach($branches as $b)
+                            <option value="{{ $b->id }}">{{ $b->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
+                @if(isset($shifts))
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Shift Kerja</label>
+                    <select name="shift_id" id="editEmpShift" class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                        <option value="">Shift Default (Bawaan)</option>
+                        @foreach($shifts as $s)
+                            <option value="{{ $s->id }}">{{ $s->name }} ({{ substr($s->start_time, 0, 5) }} - {{ substr($s->end_time, 0, 5) }})</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" onclick="closeEditEmployeeModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold rounded-xl text-xs active:scale-95">Batal</button>
                     <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs active:scale-95 shadow-md">Simpan Perubahan</button>

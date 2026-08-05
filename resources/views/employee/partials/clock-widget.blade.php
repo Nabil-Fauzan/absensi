@@ -51,6 +51,11 @@
                 @csrf
                 <input type="hidden" name="latitude" value="">
                 <input type="hidden" name="longitude" value="">
+                <input type="hidden" name="accuracy" value="">
+                <input type="hidden" name="ip_latitude" value="">
+                <input type="hidden" name="ip_longitude" value="">
+                <input type="hidden" name="ip_city" value="">
+                <input type="hidden" name="ip_accuracy" value="">
                 <button type="button" onclick="requestLocationAndSubmit('check-in-form')" class="px-6 py-3 bg-white text-emerald-800 font-bold rounded-xl shadow-lg hover:bg-emerald-50 hover:scale-[1.02] active:scale-95 transition duration-150 flex items-center gap-1.5">
                     <i class="bi bi-box-arrow-in-right"></i> Absen Masuk (Check-In)
                 </button>
@@ -60,6 +65,11 @@
                 @csrf
                 <input type="hidden" name="latitude" value="">
                 <input type="hidden" name="longitude" value="">
+                <input type="hidden" name="accuracy" value="">
+                <input type="hidden" name="ip_latitude" value="">
+                <input type="hidden" name="ip_longitude" value="">
+                <input type="hidden" name="ip_city" value="">
+                <input type="hidden" name="ip_accuracy" value="">
                 <button type="button" onclick="requestLocationAndSubmit('check-out-form')" class="px-6 py-3 bg-rose-500 text-white font-bold rounded-xl shadow-lg hover:bg-rose-600 hover:scale-[1.02] active:scale-95 transition duration-150 flex items-center gap-1.5">
                     <i class="bi bi-box-arrow-right"></i> Absen Keluar (Check-Out)
                 </button>

@@ -20,6 +20,29 @@
                 </div>
             @endif
 
+            <!-- Birthday Banner -->
+            @if (isset($isBirthday) && $isBirthday)
+                <div class="relative overflow-hidden p-6 rounded-3xl bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-xl border border-pink-400/30 flex items-center gap-4 transition duration-150 transform hover:scale-[1.01]">
+                    <div class="absolute -right-6 -bottom-6 text-9xl opacity-20 transform rotate-12">🎉</div>
+                    <div class="text-4xl">🎂</div>
+                    <div>
+                        <h4 class="font-extrabold text-lg">Selamat Ulang Tahun, {{ Auth::user()->name }}!</h4>
+                        <p class="text-xs text-pink-100 font-medium mt-0.5">Semoga panjang umur dan sukses selalu! Nikmati jatah khusus 1 Hari Cuti Ulang Tahun Anda.</p>
+                    </div>
+                </div>
+            @endif
+
+            <!-- Holiday Banner -->
+            @if (isset($todayHoliday) && $todayHoliday)
+                <div class="p-6 rounded-3xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 shadow-md border border-emerald-100 dark:border-emerald-900/40 flex items-center gap-4 transition duration-150">
+                    <div class="text-3xl text-emerald-600 dark:text-emerald-400"><i class="bi bi-calendar-check-fill"></i></div>
+                    <div>
+                        <h4 class="font-extrabold text-sm md:text-base">Hari Libur Nasional: {{ $todayHoliday->name }}</h4>
+                        <p class="text-xs text-emerald-600 dark:text-emerald-400/80 font-medium mt-0.5">Hari ini adalah hari libur resmi. Aktivitas absensi dibebaskan untuk hari ini.</p>
+                    </div>
+                </div>
+            @endif
+
             <!-- ================= EMPLOYEE DASHBOARD ================= -->
             @include('employee.partials.monthly-stats')
 
@@ -47,22 +70,50 @@
             }, 1000);
         }
 
-        // --- Geolocation Request for Check-In / Check-Out ---
-        function requestLocationAndSubmit(formId) {
+        // --- Geolocation Request for Check-In / Check-Out with IP Fallback and Spoof Detection ---
+        async function requestLocationAndSubmit(formId) {
             const form = document.getElementById(formId);
             if (!form) return;
             
+            // Disable button and show spinner loading indicator
+            const btn = form.querySelector('button');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="inline-block w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin mr-1"></span> Memproses...`;
+            }
+
+            // Fetch IP-based Location fallback (with 3-second timeout limit)
+            let ipData = null;
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+                const res = await fetch('https://ipapi.co/json/', { signal: controller.signal });
+                clearTimeout(timeoutId);
+                if (res.ok) {
+                    ipData = await res.json();
+                }
+            } catch (err) {
+                console.warn("Gagal meload IP Geolocation:", err);
+            }
+
+            if (ipData) {
+                form.querySelector('input[name="ip_latitude"]').value = ipData.latitude || '';
+                form.querySelector('input[name="ip_longitude"]').value = ipData.longitude || '';
+                form.querySelector('input[name="ip_city"]').value = ipData.city || '';
+                form.querySelector('input[name="ip_accuracy"]').value = ipData.accuracy || '';
+            }
+
+            // Retrieve HTML5 GPS Geolocation
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        // Set coords value
                         form.querySelector('input[name="latitude"]').value = position.coords.latitude;
                         form.querySelector('input[name="longitude"]').value = position.coords.longitude;
+                        form.querySelector('input[name="accuracy"]').value = position.coords.accuracy || '';
                         form.submit();
                     },
                     (error) => {
-                        // Fallback - submit without coordinate data (will WFH)
-                        console.warn("Akses GPS ditolak, mengisi WFH secara default.");
+                        console.warn("Akses GPS diblokir, menggunakan koordinat IP fallback.");
                         form.submit();
                     },
                     { enableHighAccuracy: true, timeout: 5000 }
